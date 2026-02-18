@@ -2,8 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { AppHeader } from "../components/AppHeader";
-import { palette, spacing, typography } from "../constants/theme";
+import { AppHeader } from "../../components/AppHeader";
+import { palette, spacing, typography } from "../../constants/theme";
 
 // MYSA-STYLE PROFILE
 // Typography-led layout
@@ -62,7 +62,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
-      <AppHeader icon="back" showSearch={false} showWishlist={false} />
+      <AppHeader showSearch={false} showWishlist={false} />
 
       <ScrollView
         style={styles.scrollView}
@@ -194,3 +194,4 @@ const styles = StyleSheet.create({
     fontWeight: "300",
   },
 });
+

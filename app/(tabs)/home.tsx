@@ -1,11 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
   Image,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -14,260 +15,279 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AnimatedComponent, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming
+} from "react-native-reanimated";
 import { AppHeader } from "../../components/AppHeader";
-import {
-  brandData,
-  categoryData,
-  footerContent,
-  jewellerySpotlight,
-  reasonsToTrust,
-} from "../../constants/catalog";
-import { palette, radius, spacing } from "../../constants/theme";
-
-const heroSlides = [
-  {
-    title: "Bridal Polki Treasures",
-    subtitle: "Uncut diamonds framed in 22K gold with emerald cascades.",
-    image:
-      "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Statement Cocktail Rings",
-    subtitle: "Sculpted gemstones imagined for bold evenings.",
-    image:
-      "https://images.unsplash.com/photo-1524230572899-a752b3835840?auto=format&fit=crop&w=1200&q=80",
-  },
-  {
-    title: "Heirloom Necklaces",
-    subtitle: "Layered pearls meeting mirror-polished gold filigree.",
-    image:
-      "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=1200&q=80",
-  },
-];
-
-const drawerSections = [
-  {
-    title: "Orders",
-    items: ["Active Orders", "Order History", "Special Commissions"],
-  },
-  {
-    title: "Browse Category",
-    items: ["Necklaces", "Bridal Gallery", "Limited Editions"],
-  },
-  {
-    title: "My Category",
-    items: ["Saved Looks", "Wishlist Boards", "Compare Metals"],
-  },
-];
-
-const legalLinks = [
-  { label: "Privacy Policy", type: "privacy" },
-  { label: "Terms & Conditions", type: "terms" },
-] as const;
+import { jewellerySpotlight } from "../../constants/catalog";
+import { animations, palette, radius, shadow, spacing, typography } from "../../constants/theme";
 
 const { width } = Dimensions.get("window");
+
+// Hero Banner Slides with Content
+const heroSlides = [
+  {
+    image: require("../../assets/jawellery-images/Gold-neckles.jpg"),
+    title: "Bridal Polki Treasures",
+    subtitle: "Uncut diamonds framed in 22K gold with emerald cascades.",
+  },
+  {
+    image: require("../../assets/jawellery-images/gold-bangle.jpg"),
+    title: "Statement Cocktail Rings",
+    subtitle: "Sculpted gemstones imagined for bold evenings.",
+  },
+  {
+    image: require("../../assets/jawellery-images/necklace-2.jpeg"),
+    title: "Heirloom Necklaces",
+    subtitle: "Layered pearls meeting mirror-polished gold filigree.",
+  },
+];
+
+// Featured Collections
+const featuredCollections = [
+  {
+    name: "Bridal Collection",
+    image: require("../../assets/jawellery-images/jawelery-image-2.jpg"),
+  },
+  {
+    name: "Daily Wear",
+    image: require("../../assets/jawellery-images/jawellery-12.jpg"),
+  },
+  {
+    name: "Statement Pieces",
+    image: require("../../assets/jawellery-images/jawellery-13.jpg"),
+  },
+];
+
+// Browse Category Items (from old sidebar)
+const browseCategoryItems = [
+  "Necklaces",
+  "Rings",
+  "Bangles",
+  "Earrings",
+  "Bridal Sets",
+  "Men's Edit",
+];
+
+// Drawer Menu Items (old sidebar)
+const drawerMenuItems = [
+  "Shortlist",
+  "Customer Order",
+  "My Catalogue",
+  "Call Us",
+];
+
+// Category Type Options
+const categoryTypeOptions: Record<string, string[]> = {
+  Necklaces: ["All", "Long", "Short", "Pendant"],
+  Rings: ["All", "Solitaire", "Cocktail", "Bands"],
+  Bangles: ["All", "Kadas", "Stacks"],
+  Earrings: ["All", "Studs", "Chandbalis", "Drops"],
+  "Bridal Sets": ["All", "Necklace Set", "Full Bridal"],
+  "Men's Edit": ["All", "Rings", "Accessories"],
+};
 
 export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const drawerX = useRef(new Animated.Value(-width)).current;
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [categoryToConfigure, setCategoryToConfigure] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const router = useRouter();
+  const heroScrollRef = useRef<ScrollView>(null);
+  const drawerX = useRef(new Animated.Value(-width)).current;
 
-  const toggleDrawer = () => setDrawerOpen((prev) => !prev);
-  const goToProfile = () => {
-    setDrawerOpen(false);
-    router.push("/profile");
-  };
-  const openLegal = (type: (typeof legalLinks)[number]["type"]) => {
-    setDrawerOpen(false);
-    router.push({
-      pathname: "/legal",
-      params: { type },
-    });
-  };
+  // Calculate card width for carousel
+  const cardWidth = width - spacing.lg * 2;
+  const cardWithMargin = cardWidth + spacing.lg;
 
+  // Auto-scroll hero banner
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => {
+        const next = (prev + 1) % heroSlides.length;
+        heroScrollRef.current?.scrollTo({
+          x: next * cardWithMargin,
+          animated: true,
+        });
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [cardWithMargin]);
+
+  // Drawer animation
   useEffect(() => {
     Animated.spring(drawerX, {
       toValue: drawerOpen ? 0 : -width,
       useNativeDriver: true,
+      tension: 50,
+      friction: 7,
     }).start();
   }, [drawerOpen, drawerX]);
 
-  const carouselIndicators = useMemo(
-    () =>
-      heroSlides.map((_, index) => (
-        <View
-          key={`${index}`}
-          style={[
-            styles.indicatorDot,
-            {
-              backgroundColor:
-                index === activeSlide ? palette.gold : "rgba(255,255,255,0.4)",
-              width: index === activeSlide ? 28 : 10,
-            },
-          ]}
-        />
-      )),
-    [activeSlide],
-  );
+  const toggleDrawer = () => setDrawerOpen((prev) => !prev);
+
+  const handleProductPress = (product: typeof jewellerySpotlight[0]) => {
+    router.push({
+      pathname: "/product-details",
+      params: { name: product.name },
+    });
+  };
+
+  const handleCategoryPress = (category: string) => {
+    // Check if category has type options
+    if (categoryTypeOptions[category] && categoryTypeOptions[category].length > 1) {
+      setCategoryToConfigure(category);
+      setSelectedType("All");
+      setCategoryModalVisible(true);
+    } else {
+      // Navigate directly if no type options
+      router.push({
+        pathname: "/category",
+        params: { name: category },
+      });
+    }
+  };
+
+  const handleCategoryContinue = () => {
+    if (categoryToConfigure) {
+      router.push({
+        pathname: "/category",
+        params: {
+          name: categoryToConfigure,
+          type: selectedType ?? "All",
+        },
+      });
+    }
+    setCategoryModalVisible(false);
+  };
+
+  const handleCollectionPress = (collection: typeof featuredCollections[0]) => {
+    router.push({
+      pathname: "/category",
+      params: { name: collection.name },
+    });
+  };
+
+  const goToProfile = () => {
+    setDrawerOpen(false);
+    router.push("/(tabs)/profile");
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <AppHeader onMenuPress={toggleDrawer} />
 
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={(event) => {
-            const newIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-            setActiveSlide(newIndex);
-          }}
-        >
-          {heroSlides.map((slide, index) => (
-            <View key={slide.title} style={styles.heroCard}>
-              <Image source={{ uri: slide.image }} style={styles.heroImage} />
-              <View style={styles.heroOverlay}>
-                <Text style={styles.heroTitle}>{slide.title}</Text>
-                <Text style={styles.heroSubtitle}>{slide.subtitle}</Text>
-                <TouchableOpacity style={styles.heroButton}>
-                  <Text style={styles.heroButtonText}>
-                    {index === 0 ? "View Bridal Curation" : "Discover"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-        <View style={styles.indicatorRow}>{carouselIndicators}</View>
+        {/* Hero Banner - Card Shaped Carousel */}
+        <View style={styles.heroCardContainer}>
+          <ScrollView
+            ref={heroScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              const newIndex = Math.round(event.nativeEvent.contentOffset.x / cardWithMargin);
+              setActiveSlide(newIndex);
+            }}
+            scrollEventThrottle={16}
+            contentContainerStyle={styles.heroScrollContent}
+            decelerationRate="fast"
+            snapToInterval={cardWithMargin}
+            snapToAlignment="start"
+          >
+            {heroSlides.map((slide, index) => (
+              <HeroSlideCard 
+                key={index} 
+                slide={slide} 
+                index={index}
+                cardWidth={cardWidth}
+              />
+            ))}
+          </ScrollView>
+          <View style={styles.indicatorRow}>
+            {heroSlides.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.indicatorDot,
+                  index === activeSlide && styles.indicatorDotActive,
+                ]}
+              />
+            ))}
+          </View>
+        </View>
 
-        <SectionHeader title="Jewellery Categories" action="View all" />
-        <View style={styles.categoryGrid}>
-          {categoryData.map((category) => (
-            <TouchableOpacity
-              key={category.label}
-              style={styles.categoryCard}
-              onPress={() =>
-                router.push({
-                  pathname: "/category",
-                  params: { name: category.label },
-                })
-              }
-            >
-              <Text style={styles.categoryLabel}>{category.label}</Text>
-              <Text style={styles.categoryPieces}>{category.pieces} designs</Text>
-              <Feather name="arrow-right" size={16} color={palette.gold} />
+        {/* Browse Category Cards - Premium Design */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Browse Categories</Text>
+          </View>
+          <View style={styles.browseCategoryGrid}>
+            {browseCategoryItems.map((category, index) => (
+              <BrowseCategoryCard
+                key={category}
+                category={category}
+                index={index}
+                onPress={() => handleCategoryPress(category)}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Featured Collections - Horizontal Scroll */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Featured Collections</Text>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/categories")}>
+              <Text style={styles.sectionAction}>See all</Text>
             </TouchableOpacity>
-          ))}
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.collectionsScroll}
+          >
+            {featuredCollections.map((collection, index) => (
+              <CollectionCard
+                key={collection.name}
+                collection={collection}
+                index={index}
+                onPress={() => handleCollectionPress(collection)}
+              />
+            ))}
+          </ScrollView>
         </View>
 
-        <SectionHeader title="Product Brands" action="Discover designers" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingBottom: spacing.sm }}>
-          {brandData.map((brand) => (
-            <View key={brand.name} style={styles.brandCard}>
-              <Text style={styles.brandName}>{brand.name}</Text>
-              <Text style={styles.brandTagline}>{brand.tagline}</Text>
-            </View>
-          ))}
-        </ScrollView>
-
-        <View style={styles.productGrid}>
-          {jewellerySpotlight.map((piece) => (
-            <View key={piece.name} style={styles.productCard}>
-              <Image source={{ uri: piece.image }} style={styles.productImage} />
-              <View style={styles.productOverlay}>
-                <Text style={styles.productName}>{piece.name}</Text>
-                <Text style={styles.productDetail}>{piece.detail}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <SectionHeader title="Why buy from us" />
-        <View style={{ gap: spacing.md }}>
-          {reasonsToTrust.map((reason) => (
-            <View key={reason.title} style={styles.reasonCard}>
-              <View style={styles.reasonBadge}>
-                <Feather name="shield" size={18} color={palette.deepGreen} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.reasonTitle}>{reason.title}</Text>
-                <Text style={styles.reasonCopy}>{reason.copy}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <SectionHeader title="Need quick assistance?" />
-        <Pressable style={styles.whatsappBanner}>
-          <View>
-            <Text style={styles.bannerTitle}>WhatsApp Concierge</Text>
-            <Text style={styles.bannerCopy}>
-              Designers respond within 10 minutes for bespoke queries.
-            </Text>
+        {/* Best Sellers - 2 Column Grid */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Best Sellers</Text>
           </View>
-          <Feather name="message-circle" size={32} color={palette.deepGreen} />
-        </Pressable>
-
-        <View style={styles.footer}>
-          <View style={styles.footerRow}>
-            <View style={styles.footerColumn}>
-              <Text style={styles.footerHeading}>Aurum Maison</Text>
-              {footerContent.maison.map((line) => (
-                <Text key={line} style={styles.footerCopy}>
-                  {line}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.footerColumn}>
-              <Text style={styles.footerHeading}>Contact us</Text>
-              {footerContent.contact.map((item) => (
-                <Text key={item.label} style={styles.footerCopy}>
-                  {item.label}: <Text style={styles.footerHighlight}>{item.value}</Text>
-                </Text>
-              ))}
-            </View>
+          <View style={styles.productGrid}>
+            {jewellerySpotlight.map((product, index) => (
+              <ProductCard
+                key={product.name}
+                product={product}
+                index={index}
+                onPress={() => handleProductPress(product)}
+              />
+            ))}
           </View>
-          <View style={styles.footerRow}>
-            <View style={styles.footerColumn}>
-              <Text style={styles.footerHeading}>Client care</Text>
-              {footerContent.support.map((line) => (
-                <Text key={line} style={styles.footerCopy}>
-                  {line}
-                </Text>
-              ))}
-            </View>
-            <View style={styles.footerColumn}>
-              <Text style={styles.footerHeading}>Hours & socials</Text>
-              {footerContent.hours.map((line) => (
-                <Text key={line} style={styles.footerCopy}>
-                  {line}
-                </Text>
-              ))}
-              <View style={styles.socialRow}>
-                {footerContent.socials.map((social) => (
-                  <View key={social.label} style={styles.socialChip}>
-                    <Feather name={social.icon as any} size={14} color={palette.gold} />
-                    <Text style={styles.socialLabel}>{social.label}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-          <Text style={styles.footerFineprint}>
-            © 2025 Aurum Maison · Crafted with 22K brilliance · enquiries@aurumatelier.com
-          </Text>
         </View>
       </ScrollView>
 
+      {/* Old Sidebar Drawer */}
       {drawerOpen && <Pressable style={styles.overlay} onPress={toggleDrawer} />}
-
       <Animated.View
         style={[
           styles.drawer,
@@ -277,412 +297,593 @@ export default function Home() {
         ]}
       >
         <View style={styles.drawerHeader}>
-          <View style={styles.profileBadge}>
-            <Text style={styles.profileInitials}>AK</Text>
+          <Text style={styles.welcomeText}>WELCOME</Text>
+          <View style={styles.drawerHeaderContent}>
+            <Text style={styles.drawerUserName}>Md Sahil</Text>
+            <TouchableOpacity style={styles.editButton} onPress={goToProfile}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.profileName}>Aria Kapoor</Text>
-            <Text style={styles.profileMeta}>Heritage Club · Since 2018</Text>
-          </View>
-          <TouchableOpacity style={styles.profileAction} onPress={goToProfile}>
-            <Text style={styles.profileActionLabel}>Edit</Text>
-          </TouchableOpacity>
         </View>
-        {drawerSections.map((section) => (
-          <View key={section.title} style={styles.drawerSection}>
-            <Text style={styles.drawerSectionTitle}>{section.title}</Text>
-            {section.items.map((item) => (
-              <TouchableOpacity key={item} style={styles.drawerItem}>
-                <Text style={styles.drawerItemLabel}>{item}</Text>
-                <Feather name="chevron-right" size={16} color={palette.paleGold} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        ))}
-
-        <View style={styles.legalSection}>
-          {legalLinks.map((link) => (
-            <TouchableOpacity
-              key={link.type}
-              style={styles.legalLink}
-              onPress={() => openLegal(link.type)}
-            >
-              <Text style={styles.drawerItemLabel}>{link.label}</Text>
-              <Feather name="external-link" size={14} color={palette.paleGold} />
+        <View style={styles.drawerMenu}>
+          {drawerMenuItems.map((item) => (
+            <TouchableOpacity key={item} style={styles.drawerMenuItem}>
+              <Text style={styles.drawerMenuItemLabel}>{item}</Text>
+              <Feather name="chevron-right" size={18} color={palette.gold} />
             </TouchableOpacity>
           ))}
         </View>
-
-        <TouchableOpacity style={styles.logoutButton}>
-          <Feather name="log-out" size={18} color={palette.deepGreen} />
-          <Text style={styles.logoutLabel}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.drawerSection}>
+          <Text style={styles.drawerSectionTitle}>Browse Category</Text>
+          {browseCategoryItems.map((item) => (
+            <TouchableOpacity
+              key={item}
+              style={styles.drawerMenuItem}
+              onPress={() => {
+                setDrawerOpen(false);
+                router.push({
+                  pathname: "/category",
+                  params: { name: item },
+                });
+              }}
+            >
+              <Text style={styles.drawerMenuItemLabel}>{item}</Text>
+              <Feather name="chevron-right" size={18} color={palette.gold} />
+            </TouchableOpacity>
+          ))}
+        </View>
       </Animated.View>
+
+      {/* Category Type Modal */}
+      <Modal
+        visible={categoryModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setCategoryModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>{categoryToConfigure}</Text>
+            <ScrollView style={styles.modalList}>
+              {categoryToConfigure &&
+                (categoryTypeOptions[categoryToConfigure] ?? ["All"]).map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.modalItem,
+                      selectedType === type && styles.modalItemSelected,
+                    ]}
+                    onPress={() => setSelectedType(type)}
+                  >
+                    <Text
+                      style={[
+                        styles.modalItemLabel,
+                        selectedType === type && styles.modalItemLabelSelected,
+                      ]}
+                    >
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setCategoryModalVisible(false)}
+              >
+                <Text style={styles.modalButtonSecondaryLabel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleCategoryContinue}
+              >
+                <Text style={styles.modalButtonPrimaryLabel}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const SectionHeader = ({
-  title,
-  action,
+// Hero Slide Card Component (Card Shaped)
+function HeroSlideCard({ 
+  slide, 
+  index, 
+  cardWidth 
+}: { 
+  slide: typeof heroSlides[0]; 
+  index: number;
+  cardWidth: number;
+}) {
+  const scale = useSharedValue(1.05);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: animations.normal });
+    scale.value = withSpring(1.0, { damping: 15, stiffness: 100 });
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <AnimatedComponent.View 
+      style={[
+        styles.heroSlideCard, 
+        { width: cardWidth },
+        animatedStyle
+      ]}
+    >
+      <Image source={slide.image} style={styles.heroImage} resizeMode="cover" />
+    </AnimatedComponent.View>
+  );
+}
+
+// Browse Category Card - Premium Design
+function BrowseCategoryCard({
+  category,
+  index,
+  onPress,
 }: {
-  title: string;
-  action?: string;
-}) => (
-  <View style={styles.sectionHeader}>
-    <Text style={styles.sectionHeading}>{title}</Text>
-    {action && (
-      <Text style={styles.sectionAction}>
-        {action} <Feather name="arrow-up-right" size={14} color={palette.cream} />
-      </Text>
-    )}
-  </View>
-);
+  category: string;
+  index: number;
+  onPress: () => void;
+}) {
+  const translateY = useSharedValue(30);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.95);
+
+  useEffect(() => {
+    const delay = index * 80;
+    setTimeout(() => {
+      opacity.value = withTiming(1, { duration: 500 });
+      translateY.value = withSpring(0, { damping: 12, stiffness: 100 });
+      scale.value = withSpring(1, { damping: 12, stiffness: 100 });
+    }, delay);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <AnimatedComponent.View style={animatedStyle}>
+      <TouchableOpacity
+        style={styles.browseCategoryCard}
+        onPress={onPress}
+        activeOpacity={0.85}
+      >
+        <View style={styles.browseCategoryIconContainer}>
+          <Feather name="zap" size={24} color={palette.gold} />
+        </View>
+        <Text style={styles.browseCategoryName}>{category}</Text>
+        <View style={styles.browseCategoryArrow}>
+          <Feather name="arrow-right" size={16} color={palette.gold} />
+        </View>
+      </TouchableOpacity>
+    </AnimatedComponent.View>
+  );
+}
+
+// Collection Card Component
+function CollectionCard({
+  collection,
+  index,
+  onPress,
+}: {
+  collection: typeof featuredCollections[0];
+  index: number;
+  onPress: () => void;
+}) {
+  const translateY = useSharedValue(animations.pageLoad.slide);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    const delay = index * animations.cardStagger;
+    setTimeout(() => {
+      opacity.value = withTiming(1, { duration: animations.normal });
+      translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+    }, delay);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <AnimatedComponent.View style={animatedStyle}>
+      <TouchableOpacity
+        style={styles.collectionCard}
+        onPress={onPress}
+        activeOpacity={0.9}
+      >
+        <Image source={collection.image} style={styles.collectionImage} resizeMode="cover" />
+        <View style={styles.collectionOverlay} />
+        <Text style={styles.collectionName}>{collection.name}</Text>
+      </TouchableOpacity>
+    </AnimatedComponent.View>
+  );
+}
+
+// Product Card Component
+function ProductCard({
+  product,
+  index,
+  onPress,
+}: {
+  product: typeof jewellerySpotlight[0];
+  index: number;
+  onPress: () => void;
+}) {
+  const translateY = useSharedValue(animations.pageLoad.slide);
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.95);
+
+  useEffect(() => {
+    const delay = index * animations.cardStagger;
+    setTimeout(() => {
+      opacity.value = withTiming(1, { duration: animations.normal });
+      translateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      scale.value = withSpring(1, { damping: 15, stiffness: 100 });
+    }, delay);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <AnimatedComponent.View style={animatedStyle}>
+      <TouchableOpacity
+        style={styles.productCard}
+        onPress={onPress}
+        activeOpacity={0.9}
+      >
+        <Image source={product.image} style={styles.productImage} resizeMode="cover" />
+        <View style={styles.productInfo}>
+          <Text style={styles.productName} numberOfLines={2}>
+            {product.name}
+          </Text>
+          <Text style={styles.productPrice} numberOfLines={1}>
+            {product.detail}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </AnimatedComponent.View>
+  );
+}
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.deepGreen,
+    backgroundColor: palette.ivory,
   },
-  heroCard: {
-    width,
-    padding: spacing.md,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: spacing.xl,
+  },
+  // Hero Banner - Card Shaped
+  heroCardContainer: {
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+    height: 280,
+  },
+  heroScrollContent: {
+    paddingRight: spacing.lg,
+  },
+  heroSlideCard: {
+    height: 280,
+    borderRadius: radius.lg,
+    overflow: "hidden",
+    backgroundColor: palette.white,
+    marginRight: spacing.lg,
+    ...shadow.elevated,
   },
   heroImage: {
     width: "100%",
-    height: 280,
-    borderRadius: radius.lg,
-  },
-  heroOverlay: {
-    position: "absolute",
-    left: spacing.md * 2,
-    right: spacing.md * 2,
-    bottom: spacing.lg,
-    backgroundColor: "rgba(10,20,15,0.7)",
-    padding: spacing.md,
-    borderRadius: radius.lg,
-  },
-  heroTitle: {
-    color: palette.paleGold,
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  heroSubtitle: {
-    color: palette.cream,
-    marginVertical: spacing.xs,
-    lineHeight: 22,
-  },
-  heroButton: {
-    alignSelf: "flex-start",
-    backgroundColor: palette.gold,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  heroButtonText: {
-    color: palette.deepGreen,
-    fontWeight: "700",
+    height: "100%",
   },
   indicatorRow: {
+    position: "absolute",
+    bottom: spacing.md,
+    left: 0,
+    right: 0,
     flexDirection: "row",
     justifyContent: "center",
     gap: spacing.xs,
-    marginBottom: spacing.md,
   },
   indicatorDot: {
-    height: 10,
-    borderRadius: radius.full,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(198, 162, 77, 0.3)",
+  },
+  indicatorDotActive: {
+    width: 24,
+    backgroundColor: palette.gold,
+  },
+  // Sections
+  section: {
+    marginBottom: spacing.xl,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  sectionHeading: {
-    color: palette.cream,
-    fontSize: 20,
-    fontWeight: "700",
+  sectionTitle: {
+    ...typography.h3,
+    color: palette.textPrimary,
   },
   sectionAction: {
-    color: palette.paleGold,
-    fontSize: 13,
+    ...typography.bodySmall,
+    color: palette.gold,
   },
-  categoryGrid: {
+  // Browse Category Cards - Premium
+  browseCategoryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    paddingHorizontal: spacing.lg,
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
   },
-  categoryCard: {
-    width: (width - spacing.md * 3) / 2,
-    backgroundColor: palette.emerald,
+  browseCategoryCard: {
+    width: (width - spacing.lg * 2 - spacing.md) / 2,
+    backgroundColor: palette.white,
     borderRadius: radius.md,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
-  categoryLabel: {
-    color: palette.cream,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  categoryPieces: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 13,
-  },
-  brandCard: {
-    width: 220,
-    marginLeft: spacing.md,
-    marginRight: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: "#1d3b32",
+    padding: spacing.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 140,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: palette.divider,
+    ...shadow.card,
   },
-  productGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  browseCategoryIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: palette.ivory,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.md,
+  },
+  browseCategoryName: {
+    ...typography.body,
+    color: palette.textPrimary,
+    fontWeight: "400",
+    textAlign: "center",
+    marginBottom: spacing.xs,
+  },
+  browseCategoryArrow: {
+    marginTop: spacing.xs,
+  },
+  // Featured Collections
+  collectionsScroll: {
+    paddingHorizontal: spacing.lg,
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.lg,
   },
-  productCard: {
-    width: (width - spacing.md * 3) / 2,
-    borderRadius: radius.lg,
-    overflow: "hidden",
-  },
-  productImage: {
-    width: "100%",
+  collectionCard: {
+    width: 280,
     height: 200,
+    borderRadius: radius.md,
+    overflow: "hidden",
+    backgroundColor: palette.white,
+    ...shadow.card,
   },
-  productOverlay: {
+  collectionImage: {
+    width: "100%",
+    height: "100%",
+  },
+  collectionOverlay: {
     position: "absolute",
+    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.12)",
+  },
+  collectionName: {
+    position: "absolute",
+    bottom: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    ...typography.h3,
+    color: palette.gold,
+  },
+  // Best Sellers Grid
+  productGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  productCard: {
+    width: (width - spacing.lg * 2 - spacing.md) / 2,
+    height: 300, // Fixed height for all cards
+    backgroundColor: palette.white,
+    borderRadius: radius.md,
+    overflow: "hidden",
+    ...shadow.card,
+  },
+  productImage: {
+    width: "100%",
+    height: 180, // Reduced image height to show content
+    backgroundColor: palette.divider,
+  },
+  productInfo: {
     padding: spacing.md,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    flex: 1,
+    justifyContent: "space-between",
+    minHeight: 100, // Ensure enough space for content
   },
   productName: {
-    color: palette.cream,
-    fontSize: 16,
-    fontWeight: "700",
+    ...typography.body,
+    color: palette.textPrimary,
+    marginBottom: spacing.xs,
+    fontWeight: "400",
   },
-  productDetail: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 13,
-    marginTop: spacing.xs / 2,
-  },
-  brandName: {
+  productPrice: {
+    ...typography.bodySmall,
     color: palette.gold,
-    fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "400",
   },
-  brandTagline: {
-    color: palette.cream,
-    marginTop: spacing.xs,
-  },
-  reasonCard: {
-    flexDirection: "row",
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  reasonBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    backgroundColor: palette.paleGold,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  reasonTitle: {
-    color: palette.cream,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  reasonCopy: {
-    color: "rgba(255,255,255,0.7)",
-    marginTop: spacing.xs / 2,
-    lineHeight: 20,
-  },
-  whatsappBanner: {
-    margin: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: palette.gold,
-    padding: spacing.lg,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  bannerTitle: {
-    color: palette.deepGreen,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  bannerCopy: {
-    color: palette.deepGreen,
-    marginTop: spacing.xs,
-    width: 220,
-  },
-  footer: {
-    marginTop: spacing.lg,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
-    gap: spacing.lg,
-  },
-  footerRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.lg,
-  },
-  footerColumn: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  footerHeading: {
-    color: palette.paleGold,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  footerCopy: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  footerHighlight: {
-    color: palette.gold,
-  },
-  socialRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  socialChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  socialLabel: {
-    color: palette.cream,
-    fontSize: 12,
-  },
-  footerFineprint: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: spacing.sm,
-  },
+  // Drawer - Old Sidebar
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
   drawer: {
     position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
-    width: width * 0.8,
-    backgroundColor: palette.dusk,
-    paddingTop: spacing.xl,
+    width: width * 0.75,
+    backgroundColor: palette.ivory,
+    paddingTop: spacing.xl + 20,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
+    ...shadow.elevated,
   },
   drawerHeader: {
+    marginBottom: spacing.xl,
+  },
+  welcomeText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: palette.textPrimary,
+    marginBottom: spacing.sm,
+    letterSpacing: 0.5,
+    fontFamily: "serif",
+  },
+  drawerHeaderContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
-    marginBottom: spacing.lg,
+    justifyContent: "space-between",
   },
-  profileBadge: {
-    width: 58,
-    height: 58,
-    borderRadius: radius.full,
-    backgroundColor: palette.gold,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  profileInitials: {
-    color: palette.deepGreen,
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  profileName: {
-    color: palette.cream,
+  drawerUserName: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "500",
+    color: palette.textPrimary,
+    fontFamily: "serif",
   },
-  profileMeta: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 13,
-  },
-  profileAction: {
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: palette.paleGold,
+  editButton: {
+    backgroundColor: palette.gold,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    borderRadius: radius.full,
   },
-  profileActionLabel: {
-    color: palette.paleGold,
-    fontSize: 12,
+  editButtonText: {
+    color: palette.white,
+    fontSize: 14,
     fontWeight: "600",
   },
-  drawerSection: {
+  drawerMenu: {
+    gap: 0,
     marginBottom: spacing.lg,
   },
-  drawerSectionTitle: {
-    color: palette.paleGold,
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: spacing.sm,
-  },
-  drawerItem: {
+  drawerMenuItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.divider,
+  },
+  drawerMenuItemLabel: {
+    fontSize: 15,
+    fontWeight: "300",
+    color: palette.textPrimary,
+  },
+  drawerSection: {
+    marginTop: spacing.md,
+  },
+  drawerSectionTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: palette.textPrimary,
+    marginBottom: spacing.sm,
+    letterSpacing: 0.5,
+    fontFamily: "serif",
+  },
+  // Category Type Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
+  modalContainer: {
+    backgroundColor: palette.white,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    maxHeight: "80%",
+    ...shadow.elevated,
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: palette.textPrimary,
+    marginBottom: spacing.md,
+  },
+  modalList: {
+    maxHeight: 260,
+  },
+  modalItem: {
     paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderBottomColor: palette.divider,
   },
-  drawerItemLabel: {
-    color: palette.cream,
-    fontSize: 14,
+  modalItemSelected: {
+    backgroundColor: palette.ivory,
   },
-  legalSection: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.15)",
-    paddingTop: spacing.md,
-    gap: spacing.sm,
+  modalItemLabel: {
+    ...typography.body,
+    color: palette.textPrimary,
+    fontWeight: "300",
   },
-  legalLink: {
+  modalItemLabelSelected: {
+    fontWeight: "400",
+    color: palette.gold,
+  },
+  modalActions: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: spacing.xs,
+    justifyContent: "flex-end",
+    gap: spacing.sm,
+    marginTop: spacing.lg,
   },
-  logoutButton: {
-    marginTop: "auto",
-    backgroundColor: palette.gold,
+  modalButton: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderRadius: radius.full,
-    paddingVertical: spacing.md,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: spacing.sm,
   },
-  logoutLabel: {
-    color: palette.deepGreen,
-    fontWeight: "700",
+  modalButtonSecondary: {
+    backgroundColor: palette.ivory,
+  },
+  modalButtonPrimary: {
+    backgroundColor: palette.gold,
+  },
+  modalButtonSecondaryLabel: {
+    ...typography.body,
+    color: palette.textPrimary,
+    fontWeight: "400",
+  },
+  modalButtonPrimaryLabel: {
+    ...typography.body,
+    color: palette.white,
+    fontWeight: "400",
   },
 });
-

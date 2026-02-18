@@ -1,5 +1,5 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppHeader } from "../../components/AppHeader";
 import { palette, radius, spacing } from "../../constants/theme";
 
@@ -32,7 +32,7 @@ export default function WhatsAppScreen() {
               Instant replies for sizing, pricing, delivery slots and bespoke commissions.
             </Text>
             <TouchableOpacity style={styles.heroButton}>
-              <Feather name="message-circle" size={18} color={palette.deepGreen} />
+              <Feather name="message-circle" size={18} color={palette.white} />
               <Text style={styles.heroButtonLabel}>Open WhatsApp</Text>
             </TouchableOpacity>
           </View>
@@ -104,52 +104,60 @@ export default function WhatsAppScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.deepGreen,
+    backgroundColor: palette.white, // White
   },
   hero: {
-    backgroundColor: palette.gold,
+    backgroundColor: palette.gold, // Gold for CTA
     borderRadius: radius.lg,
     padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.2)",
   },
+
   heroLabel: {
-    color: palette.deepGreen,
+    color: palette.white, // White text on gold
     fontSize: 14,
     textTransform: "uppercase",
     letterSpacing: 2,
+    fontWeight: "500",
   },
   heroTitle: {
-    color: palette.deepGreen,
+    color: palette.white, // White text on gold
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   heroCopy: {
-    color: palette.deepGreen,
-    opacity: 0.8,
+    color: palette.white,
+    opacity: 0.95,
   },
   heroButton: {
     marginTop: spacing.md,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
-    backgroundColor: palette.cream,
+    backgroundColor: palette.green, // Deep green
     borderRadius: radius.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   heroButtonLabel: {
-    color: palette.deepGreen,
-    fontWeight: "700",
+    color: palette.white,
+    fontWeight: "600",
   },
   card: {
-    backgroundColor: palette.emerald,
+    backgroundColor: palette.goldCream, // Cream gold for cards
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.md,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.2)",
   },
   cardTitle: {
-    color: palette.paleGold,
+    color: palette.green, // Deep green for headings
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   chipRow: {
     flexDirection: "row",
@@ -159,12 +167,13 @@ const styles = StyleSheet.create({
   chip: {
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: palette.paleGold,
+    borderColor: "rgba(212, 175, 55, 0.3)",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    backgroundColor: palette.white, // White
   },
   chipLabel: {
-    color: palette.paleGold,
+    color: palette.textPrimary, // Deep green
     fontSize: 13,
   },
   stylistRow: {
@@ -176,37 +185,39 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: radius.full,
-    backgroundColor: palette.dusk,
+    backgroundColor: palette.gold, // Gold
     alignItems: "center",
     justifyContent: "center",
   },
   stylistInitials: {
-    color: palette.gold,
-    fontWeight: "700",
+    color: palette.white, // White text on gold
+    fontWeight: "600",
     fontSize: 18,
   },
   stylistName: {
-    color: palette.cream,
+    color: palette.green, // Deep green for headings
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   stylistStatus: {
-    color: "rgba(255,255,255,0.7)",
+    color: palette.textSecondary,
     fontSize: 13,
   },
   stylistSpec: {
-    color: palette.paleGold,
+    color: palette.textSecondary,
     fontSize: 13,
   },
   outlineButton: {
-    borderColor: palette.paleGold,
-    borderWidth: 1,
+    borderColor: palette.metallicGold,
+    borderWidth: 1.5,
     borderRadius: radius.full,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    backgroundColor: palette.white, // White
   },
   outlineLabel: {
-    color: palette.paleGold,
+    color: palette.gold,
     fontWeight: "600",
   },
   dropRow: {
@@ -215,28 +226,29 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   dropTitle: {
-    color: palette.cream,
+    color: palette.green, // Deep green for headings
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   dropDate: {
-    color: "rgba(255,255,255,0.7)",
+    color: palette.textSecondary,
     fontSize: 13,
   },
   dropDesc: {
-    color: palette.paleGold,
+    color: palette.textSecondary,
     fontSize: 13,
     marginTop: spacing.xs / 2,
   },
   rsvpButton: {
-    backgroundColor: palette.gold,
+    backgroundColor: palette.gold, // Gold
     borderRadius: radius.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   rsvpLabel: {
-    color: palette.deepGreen,
-    fontWeight: "700",
+    color: palette.white, // White text on gold
+    fontWeight: "600",
   },
 });
 

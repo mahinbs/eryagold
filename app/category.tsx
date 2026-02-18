@@ -1,5 +1,7 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
+  Dimensions,
   Image,
   SafeAreaView,
   ScrollView,
@@ -8,10 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import { AppHeader } from "../components/AppHeader";
 import { catalogByCategory } from "../constants/catalog";
-import { palette, radius, spacing } from "../constants/theme";
+import { palette, radius, shadow, spacing, typography } from "../constants/theme";
+
+const { width } = Dimensions.get("window");
 
 export default function CategoryScreen() {
   const { name } = useLocalSearchParams<{ name?: string }>();
@@ -35,7 +38,7 @@ export default function CategoryScreen() {
         <View style={styles.grid}>
           {items.map((item) => (
             <TouchableOpacity key={item.name} style={styles.card}>
-              <Image source={{ uri: item.image }} style={styles.image} />
+              <Image source={item.image} style={styles.image} />
               <View style={styles.cardBody}>
                 <Text style={styles.cardName}>{item.name}</Text>
                 <Text style={styles.cardDescription}>{item.description}</Text>
@@ -61,80 +64,94 @@ export default function CategoryScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.deepGreen,
+    backgroundColor: palette.ivory,
   },
   hero: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+    gap: spacing.md,
+    backgroundColor: palette.white,
+    marginBottom: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.divider,
   },
   breadcrumb: {
-    color: palette.paleGold,
+    ...typography.caption,
+    color: palette.textSecondary,
     textTransform: "uppercase",
-    letterSpacing: 2,
-    fontSize: 12,
+    letterSpacing: 1,
+    fontWeight: "300",
   },
   title: {
-    color: palette.cream,
-    fontSize: 34,
-    fontWeight: "700",
+    ...typography.hero,
+    color: palette.textPrimary,
   },
   copy: {
-    color: "rgba(255,255,255,0.75)",
-    lineHeight: 20,
+    ...typography.body,
+    color: palette.textSecondary,
+    lineHeight: 22,
+    fontWeight: "300",
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
   card: {
-    width: "47%",
-    borderRadius: radius.lg,
-    backgroundColor: palette.emerald,
+    width: (width - spacing.lg * 2 - spacing.md) / 2, // 2 cards per row with gap
+    height: 360, // Fixed height for all cards
+    borderRadius: radius.md,
+    backgroundColor: palette.white,
     overflow: "hidden",
+    ...shadow.card,
   },
   image: {
     width: "100%",
-    height: 180,
+    height: 200, // Reduced image height to show content
+    backgroundColor: palette.divider,
   },
   cardBody: {
-    padding: spacing.md,
+    padding: spacing.lg,
     gap: spacing.xs,
+    flex: 1,
+    justifyContent: "space-between",
   },
   cardName: {
-    color: palette.paleGold,
-    fontSize: 16,
-    fontWeight: "700",
+    ...typography.h3,
+    color: palette.textPrimary,
+    marginBottom: spacing.xs / 2,
   },
   cardDescription: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 13,
+    ...typography.bodySmall,
+    color: palette.textSecondary,
+    marginBottom: spacing.xs,
+    fontWeight: "300",
   },
   cardPrice: {
+    ...typography.price,
     color: palette.gold,
-    fontWeight: "700",
     marginTop: spacing.xs,
   },
   emptyState: {
     width: "100%",
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    padding: spacing.xl,
+    borderRadius: radius.md,
+    backgroundColor: palette.white,
     alignItems: "center",
-    gap: spacing.sm,
+    gap: spacing.md,
+    ...shadow.card,
   },
   emptyTitle: {
-    color: palette.paleGold,
-    fontSize: 18,
-    fontWeight: "700",
+    ...typography.h3,
+    color: palette.textPrimary,
   },
   emptyCopy: {
-    color: "rgba(255,255,255,0.7)",
+    ...typography.bodySmall,
+    color: palette.textSecondary,
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 22,
+    fontWeight: "300",
   },
 });
 

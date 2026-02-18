@@ -1,31 +1,30 @@
-import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { palette } from "../../constants/theme";
+import { Tabs } from "expo-router";
+import { StyleSheet } from "react-native";
+import { palette, spacing, typography } from "../../constants/theme";
 
-const iconFor = (name: keyof typeof icons) => icons[name];
-
-const icons = {
-  home: "home",
-  whatsapp: "message-circle",
-  karat: "star",
-} as const;
+// BOTTOM NAVIGATION - 5 Tabs Only
+// Home, Categories, (removed Wishlist/Cart - moved to header), Profile
+// Plus 2 more tabs to make 5 total
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: palette.gold,
-        tabBarInactiveTintColor: "rgba(255,255,255,0.5)",
+        tabBarActiveTintColor: palette.gold, // Gold for active
+        tabBarInactiveTintColor: palette.textSecondary, // Gray for inactive
         tabBarStyle: {
-          backgroundColor: palette.deepGreen,
-          borderTopColor: "rgba(255,255,255,0.08)",
+          backgroundColor: palette.white,
+          borderTopColor: palette.divider,
+          borderTopWidth: StyleSheet.hairlineWidth,
           height: 70,
-          paddingBottom: 10,
+          // paddingBottom: spacing.sm,
+          paddingTop: spacing.sm,
         },
         tabBarLabelStyle: {
-          fontSize: 13,
-          fontWeight: "600",
+          ...typography.caption,
+          fontWeight: "300",
         },
       }}
     >
@@ -34,16 +33,16 @@ export default function TabsLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Feather name={iconFor("home")} size={size} color={color} />
+            <Feather name="home" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="whatsapp"
+        name="categories"
         options={{
-          title: "WhatsApp",
+          title: "Categories",
           tabBarIcon: ({ color, size }) => (
-            <Feather name={iconFor("whatsapp")} size={size} color={color} />
+            <Feather name="grid" size={size} color={color} />
           ),
         }}
       />
@@ -52,8 +51,39 @@ export default function TabsLayout() {
         options={{
           title: "Karat",
           tabBarIcon: ({ color, size }) => (
-            <Feather name={iconFor("karat")} size={size} color={color} />
+            <Feather name="star" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="whatsapp"
+        options={{
+          title: "WhatsApp",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="message-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="user" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Hide cart and wishlist from bottom menu - they're in header */}
+      <Tabs.Screen
+        name="cart"
+        options={{
+          href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="wishlist"
+        options={{
+          href: null, // Hide from tab bar
         }}
       />
     </Tabs>

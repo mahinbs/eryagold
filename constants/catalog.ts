@@ -14,30 +14,30 @@ export const brandData = [
   { name: "House of Kaia", tagline: "Sculpted Gold" },
 ];
 
-export const jewellerySpotlight = [
+export const jewellerySpotlight: Array<{
+  name: string;
+  detail: string;
+  image: any;
+}> = [
   {
     name: "Mogra Polki Choker",
     detail: "22K gold · 8ct uncut diamonds · detachable passa",
-    image:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
+    image: require("../assets/jawellery-images/jawelery-image-2.jpg"),
   },
   {
     name: "Verdant Tide Earrings",
     detail: "Colombian emeralds · rose-cut halos",
-    image:
-      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
+    image: require("../assets/jawellery-images/jawellery-image-3.jpg"),
   },
   {
     name: "Noor Statement Ring",
     detail: "18K white gold · 3.1ct diamond solitaire",
-    image:
-      "https://images.unsplash.com/photo-1522312298940-653d2b79db83?auto=format&fit=crop&w=800&q=80",
+    image: require("../assets/jawellery-images/ring-2.jpeg"),
   },
   {
     name: "Kaia Stacked Bangles",
     detail: "Matte-finish gold · enamel inlays",
-    image:
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80",
+    image: require("../assets/jawellery-images/gold-bangle.jpg"),
   },
 ];
 
@@ -98,22 +98,32 @@ export const footerContent = {
 
 export const catalogByCategory: Record<
   string,
-  Array<{ name: string; description: string; price: string; image: string }>
+  Array<{ name: string; description: string; price: string; image: any }>
 > = {
   Necklaces: [
     {
       name: "Serene Polki Cascade",
       description: "Layered 22K gold with rose-cut diamonds and meenakari backs.",
       price: "₹4.8L",
-      image:
-        "https://images.unsplash.com/photo-1518544801958-efcbf8a7ec10?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/necklase-4.jpeg"),
     },
     {
       name: "Midnight Raani Haar",
       description: "Deep green tourmalines framed with kundan motifs.",
       price: "₹7.2L",
-      image:
-        "https://images.unsplash.com/photo-1507679622673-989605832e3d?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/necklase-6.jpeg"),
+    },
+    {
+      name: "Emerald Raani Set",
+      description: "Graduated necklace with centre emerald pendant.",
+      price: "₹5.6L",
+      image: require("../assets/jawellery-images/Gold-neckles.jpg"),
+    },
+    {
+      name: "Temple Heritage Haar",
+      description: "Antique temple motifs with ruby highlights.",
+      price: "₹8.3L",
+      image: require("../assets/jawellery-images/necklase-7.jpeg"),
     },
   ],
   Rings: [
@@ -121,15 +131,25 @@ export const catalogByCategory: Record<
       name: "Noor Solitaire",
       description: "3ct EF VVS2 diamond set in floating 18K white gold.",
       price: "₹12.6L",
-      image:
-        "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/ring-1.jpeg"),
     },
     {
       name: "Verde Crown",
       description: "Emerald cabochon cradled by baguette diamonds.",
       price: "₹6.4L",
-      image:
-        "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/ring-4.jpeg"),
+    },
+    {
+      name: "Eternity Pavé Band",
+      description: "Full diamond band in 18K white gold.",
+      price: "₹3.2L",
+      image: require("../assets/jawellery-images/ring-2.jpeg"),
+    },
+    {
+      name: "Royal Cocktail Ring",
+      description: "Oversized coloured stone with double halo.",
+      price: "₹4.1L",
+      image: require("../assets/jawellery-images/ring-6.jpeg"),
     },
   ],
   Bangles: [
@@ -137,15 +157,25 @@ export const catalogByCategory: Record<
       name: "Heritage Kada Duo",
       description: "Pair of 22K kadas with floral filigree and pave diamonds.",
       price: "₹3.9L",
-      image:
-        "https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/gold-bangle.jpg"),
     },
     {
       name: "Kaia Minimal Stack",
       description: "Matte gold bangles with enamel stripes and karat screws.",
       price: "₹2.1L",
-      image:
-        "https://images.unsplash.com/photo-1507679622673-989605832e3d?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/jawellery-12.jpg"),
+    },
+    {
+      name: "Meenakari Kada",
+      description: "Vibrant enamel work with heritage motifs.",
+      price: "₹2.9L",
+      image: require("../assets/jawellery-images/jawellery-9.jpg"),
+    },
+    {
+      name: "Diamond Half Kada",
+      description: "Single row diamond bangle with openable clasp.",
+      price: "₹3.4L",
+      image: require("../assets/jawellery-images/jawellery-11.jpg"),
     },
   ],
   Earrings: [
@@ -153,15 +183,25 @@ export const catalogByCategory: Record<
       name: "Jashn Chandbalis",
       description: "Kundan chandbalis with pearl tassels and polki studs.",
       price: "₹2.8L",
-      image:
-        "https://images.unsplash.com/photo-1518544889280-37f4ca38e4b4?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/jawellery-13.jpg"),
     },
     {
       name: "Aurora Climbers",
       description: "Diamond ear climbers with detachable drops.",
       price: "₹3.1L",
-      image:
-        "https://images.unsplash.com/photo-1504829857797-ddff29c27927?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/jawellery-113.jpg"),
+    },
+    {
+      name: "Lotus Studs",
+      description: "Polki and pearl lotus motif studs.",
+      price: "₹1.6L",
+      image: require("../assets/jawellery-images/jawellery-8.jpg"),
+    },
+    {
+      name: "Drop Chandeliers",
+      description: "Layered diamond drops for evening wear.",
+      price: "₹3.9L",
+      image: require("../assets/jawellery-images/jawellery-image-3.jpg"),
     },
   ],
   "Bridal Sets": [
@@ -169,8 +209,19 @@ export const catalogByCategory: Record<
       name: "Rajkumari Suite",
       description: "Complimentary neck, earring and matha patti set.",
       price: "₹16.4L",
-      image:
-        "https://images.unsplash.com/photo-1475180098004-ca77a66827be?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/necklash-8.jpeg"),
+    },
+    {
+      name: "Noor Bridal Suite",
+      description: "Complete polki bridal suite with passa and nath.",
+      price: "₹22.0L",
+      image: require("../assets/jawellery-images/jawelery-image-2.jpg"),
+    },
+    {
+      name: "Heritage Maharani Set",
+      description: "Multi-layered haar with matching danglers.",
+      price: "₹19.5L",
+      image: require("../assets/jawellery-images/necklase-1.jpeg"),
     },
   ],
   "Men's Edit": [
@@ -178,15 +229,25 @@ export const catalogByCategory: Record<
       name: "Maharaja Cufflinks",
       description: "Hand-carved tiger eye set in 18K gold.",
       price: "₹1.2L",
-      image:
-        "https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/ring-5.jpeg"),
     },
     {
       name: "Heritage Sarpech",
       description: "Bridal brooch featuring pearls and polki diamonds.",
       price: "₹5.5L",
-      image:
-        "https://images.unsplash.com/photo-1504829857797-ddff29c27927?auto=format&fit=crop&w=900&q=80",
+      image: require("../assets/jawellery-images/ring-7.jpg"),
+    },
+    {
+      name: "Signet Statement Ring",
+      description: "Bold signet with brushed gold finish.",
+      price: "₹2.4L",
+      image: require("../assets/jawellery-images/ring-3.jpeg"),
+    },
+    {
+      name: "Minimal Cuff Bracelet",
+      description: "Sleek 18K cuff with subtle detailing.",
+      price: "₹2.1L",
+      image: require("../assets/jawellery-images/jawellery-12.jpg"),
     },
   ],
 };

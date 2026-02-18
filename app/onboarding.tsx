@@ -18,24 +18,21 @@ const slides = [
     title: "Crafted To Captivate",
     copy:
       "Browse signature collections handcrafted with heritage artistry and modern silhouettes.",
-    image:
-      "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=1000&q=80",
+    image: require("../assets/jawellery-images/jawellery-8.jpg"),
   },
   {
     id: "2",
     title: "Personal Curations",
     copy:
       "Save favourites, compare metals and curate looks before your private showroom visit.",
-    image:
-      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1000&q=80",
+    image: require("../assets/jawellery-images/jawellery-9.jpg"),
   },
   {
     id: "3",
     title: "Concierge Support",
     copy:
       "Chat instantly with our jewellery stylists for sizing, bespoke orders and delivery updates.",
-    image:
-      "https://images.unsplash.com/photo-1456926631375-92c8ce872def?auto=format&fit=crop&w=1000&q=80",
+    image: require("../assets/jawellery-images/jawellery-11.jpg"),
   },
 ];
 
@@ -78,7 +75,7 @@ export default function Onboarding() {
         }}
         renderItem={({ item }) => (
           <ImageBackground
-            source={{ uri: item.image }}
+            source={item.image}
             style={{
               width,
               flex: 1,

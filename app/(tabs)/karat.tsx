@@ -1,5 +1,5 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppHeader } from "../../components/AppHeader";
 import { palette, radius, spacing } from "../../constants/theme";
 
@@ -78,30 +78,35 @@ const Metric = ({ label, value }: { label: string; value: string }) => (
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.deepGreen,
+    backgroundColor: palette.white, // White
   },
   header: {
     flexDirection: "row",
     gap: spacing.md,
-    backgroundColor: palette.emerald,
+    backgroundColor: palette.greenLight, // Light green
     borderRadius: radius.lg,
     padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.2)",
   },
   headerTitle: {
-    color: palette.paleGold,
+    color: palette.green, // Deep green for headings
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   headerCopy: {
-    color: "rgba(255,255,255,0.7)",
+    color: palette.textSecondary,
     marginTop: spacing.xs,
     lineHeight: 20,
   },
   card: {
-    backgroundColor: palette.dusk,
+    backgroundColor: palette.goldCream, // Cream gold for cards
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.2)",
   },
   cardTop: {
     flexDirection: "row",
@@ -109,15 +114,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cardLabel: {
-    color: palette.gold,
+    color: palette.gold, // Gold
     fontSize: 26,
-    fontWeight: "700",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   cardPurity: {
-    color: palette.cream,
+    color: palette.textSecondary,
   },
   cardCopy: {
-    color: "rgba(255,255,255,0.8)",
+    color: palette.textSecondary,
     lineHeight: 20,
   },
   metricRow: {
@@ -130,27 +136,29 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   metricLabel: {
-    color: "rgba(255,255,255,0.6)",
+    color: palette.textSecondary,
     fontSize: 12,
   },
   metricValue: {
-    color: palette.paleGold,
-    fontWeight: "600",
+    color: palette.charcoal,
+    fontWeight: "400",
   },
   tipCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(212, 175, 55, 0.2)",
     padding: spacing.lg,
     gap: spacing.xs,
+    backgroundColor: palette.greenLight, // Light green
   },
   tipTitle: {
-    color: palette.paleGold,
+    color: palette.green, // Deep green for headings
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   tipCopy: {
-    color: palette.cream,
+    color: palette.textSecondary,
     lineHeight: 20,
   },
 });

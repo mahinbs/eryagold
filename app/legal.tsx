@@ -49,18 +49,21 @@ export default function LegalScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.deepGreen,
+    backgroundColor: palette.white, // White
   },
   card: {
-    backgroundColor: palette.emerald,
+    backgroundColor: palette.goldCream, // Cream gold for cards
     borderRadius: radius.lg,
     padding: spacing.lg,
     gap: spacing.md,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.2)",
   },
   title: {
-    color: palette.paleGold,
+    color: palette.green, // Deep green for headings
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: "500",
+    fontFamily: "serif",
   },
   bulletRow: {
     flexDirection: "row",
@@ -70,12 +73,12 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: radius.full,
-    backgroundColor: palette.gold,
+    backgroundColor: palette.gold, // Gold
     marginTop: spacing.xs,
   },
   copy: {
     flex: 1,
-    color: "rgba(255,255,255,0.8)",
+    color: palette.textPrimary, // Deep green text
     lineHeight: 20,
   },
 });
