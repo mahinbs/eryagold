@@ -1,6 +1,7 @@
 import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -21,13 +22,17 @@ import Animated, {
 } from "react-native-reanimated";
 import LuxuryButton from "../components/LuxuryButton";
 import { palette, radius, shadow, spacing, typography } from "../constants/theme";
+import { supabase } from "../supabase/client";
+import { useToast } from "../utils/toast";
 
 export default function Register() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState({
     fullName: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
   });
 
@@ -60,18 +65,48 @@ export default function Register() {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleRegister = () => {
-    // Basic validation
-    if (!profile.fullName || !profile.email || !profile.password) {
-      alert("Please fill in all fields"); // Simple alert for now
+  const { showToast } = useToast();
+
+  const handleRegister = async () => {
+    if (!profile.fullName || !profile.email || !profile.password || !profile.confirmPassword) {
+      showToast("Please fill in all fields.", "error");
       return;
     }
 
-    // Navigate to OTP verification instead of directly to home
-    router.push({
-      pathname: "/verify-otp",
-      params: { contact: profile.email }
+    if (profile.password !== profile.confirmPassword) {
+      showToast("Passwords do not match.", "error");
+      return;
+    }
+
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: profile.email,
+      password: profile.password,
+      options: {
+        data: {
+          full_name: profile.fullName,
+          phone: profile.phone,
+        },
+      },
     });
+
+    if (error) {
+      if (error.status === 429) {
+        showToast("Too many attempts. Please try again in an hour.", "error");
+      } else {
+        showToast(error.message, "error");
+      }
+      setLoading(false);
+    } else {
+      showToast("Registration successful! Verify your email.", "success");
+      // Instead of direct home navigation, go to OTP verification
+      router.push({
+        pathname: "/verify-otp",
+        params: { 
+          email: profile.email,
+        }
+      });
+    }
   };
 
   const titleAnimatedStyle = useAnimatedStyle(() => ({
@@ -120,7 +155,7 @@ export default function Register() {
           {/* Rings Image */}
           <Animated.View style={[styles.ringsContainer, ringsAnimatedStyle]}>
             <Image
-              source={require("../assets/jawellery-images/ring-1.jpeg")}
+              source={require("../assets/eryaGold-logo1.png")}
               style={styles.ringsImage}
               resizeMode="cover"
             />
@@ -160,6 +195,18 @@ export default function Register() {
                 value={profile.password}
                 onChangeText={(value) => handleChange("password", value)}
                 placeholder="Create a secure password"
+                placeholderTextColor={palette.textSecondary}
+                secureTextEntry
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <TextInput
+                value={profile.confirmPassword}
+                onChangeText={(value) => handleChange("confirmPassword", value)}
+                placeholder="Confirm your password"
                 placeholderTextColor={palette.textSecondary}
                 secureTextEntry
                 style={styles.input}

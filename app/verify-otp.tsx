@@ -1,270 +1,334 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withSpring,
-    withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
+import { AppHeader } from "../components/AppHeader";
 import LuxuryButton from "../components/LuxuryButton";
-import { palette, radius, spacing, typography } from "../constants/theme";
+import { palette, radius, shadow, spacing, typography } from "../constants/theme";
+import { supabase } from "../supabase/client";
+import { useToast } from "../utils/toast";
 
 export default function VerifyOtp() {
-    const router = useRouter();
-    const params = useLocalSearchParams();
-    const contact = params.contact as string || "your email/phone";
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const email = params.email as string || "";
+  const contact = email || "your email";
 
-    const [otp, setOtp] = useState(["", "", "", ""]);
-    const [timer, setTimer] = useState(30);
-    const [isResendDisabled, setIsResendDisabled] = useState(true);
+  const [otp, setOtp] = useState(new Array(8).fill(""));
+  const [loading, setLoading] = useState(false);
+  const [timer, setTimer] = useState(30);
+  const [isResendDisabled, setIsResendDisabled] = useState(true);
 
-    // Animation values
-    const titleOpacity = useSharedValue(0);
-    const titleTranslate = useSharedValue(20);
-    const subtitleOpacity = useSharedValue(0);
-    const inputOpacity = useSharedValue(0);
-    const inputTranslate = useSharedValue(30);
-    const buttonOpacity = useSharedValue(0);
+  const inputRefs = useRef<TextInput[]>([]);
 
-    useEffect(() => {
-        // Entrance animations
-        titleOpacity.value = withTiming(1, { duration: 600 });
-        titleTranslate.value = withSpring(0, { damping: 15, stiffness: 100 });
+  // Animation values
+  const titleOpacity = useSharedValue(0);
+  const titleTranslate = useSharedValue(20);
+  const subtitleOpacity = useSharedValue(0);
+  const inputOpacity = useSharedValue(0);
+  const inputTranslate = useSharedValue(30);
+  const buttonOpacity = useSharedValue(0);
 
-        subtitleOpacity.value = withDelay(200, withTiming(1, { duration: 600 }));
+  const { showToast } = useToast();
 
-        inputOpacity.value = withDelay(400, withTiming(1, { duration: 600 }));
-        inputTranslate.value = withDelay(400, withSpring(0, { damping: 15, stiffness: 100 }));
+  useEffect(() => {
+    titleOpacity.value = withTiming(1, { duration: 600 });
+    titleTranslate.value = withSpring(0, { damping: 15, stiffness: 100 });
+    subtitleOpacity.value = withDelay(200, withTiming(1, { duration: 600 }));
+    inputOpacity.value = withDelay(400, withTiming(1, { duration: 600 }));
+    inputTranslate.value = withDelay(400, withSpring(0, { damping: 15, stiffness: 100 }));
+    buttonOpacity.value = withDelay(600, withTiming(1, { duration: 600 }));
 
-        buttonOpacity.value = withDelay(600, withTiming(1, { duration: 600 }));
+    startTimer();
+  }, []);
 
-        // Timer logic
-        const interval = setInterval(() => {
-            setTimer((prev) => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    setIsResendDisabled(false);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    const handleVerify = () => {
-        const enteredOtp = otp.join("");
-        if (enteredOtp.length === 4) {
-            // Simulate verification
-            router.replace("/(tabs)/home");
-        } else {
-            // Show error (visual feedback could be added here)
-            alert("Please enter a valid 4-digit code");
+  const startTimer = () => {
+    setIsResendDisabled(true);
+    setTimer(30);
+    const interval = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setIsResendDisabled(false);
+          return 0;
         }
-    };
+        return prev - 1;
+      });
+    }, 1000);
+    return interval;
+  };
 
-    const handleResend = () => {
-        setTimer(30);
-        setIsResendDisabled(true);
-        // Simulate resend API call
-        const interval = setInterval(() => {
-            setTimer((prev) => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    setIsResendDisabled(false);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    };
+  const handleVerify = async () => {
+    const enteredOtp = otp.join("");
+    if (enteredOtp.length !== 8) {
+      showToast("Please enter the full 8-digit code.", "error");
+      return;
+    }
 
-    const handleChangeOtp = (text: string, index: number) => {
-        const newOtp = [...otp];
-        newOtp[index] = text;
-        setOtp(newOtp);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email,
+        token: enteredOtp,
+        type: 'signup',
+      });
 
-        // Auto-focus next input
-        if (text && index < 3) {
-            // This is a simplified way to handle focus in React Native without refs for each input
-            // In a production app, use refs to standard Inputs
-        }
-    };
+      if (error) throw error;
 
-    const titleAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: titleOpacity.value,
-        transform: [{ translateY: titleTranslate.value }],
-    }));
+      showToast("Account verified successfully!", "success");
+      router.replace("/(tabs)/home");
+    } catch (error: any) {
+      showToast(error.message || "Invalid code.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const subtitleAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: subtitleOpacity.value,
-    }));
+  const handleResend = async () => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      if (error) throw error;
+      showToast("Code resent successfully.", "success");
+      startTimer();
+    } catch (error: any) {
+      showToast(error.message, "error");
+    }
+  };
 
-    const inputAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: inputOpacity.value,
-        transform: [{ translateY: inputTranslate.value }],
-    }));
+  const handleChangeOtp = (text: string, index: number) => {
+    const newOtp = [...otp];
+    
+    // Check for paste (more than 1 char)
+    if (text.length > 1) {
+      const pastedData = text.slice(0, 8).split("");
+      pastedData.forEach((char, i) => {
+        if (index + i < 8) newOtp[index + i] = char;
+      });
+      setOtp(newOtp);
+      // Small timeout to ensure state update and then focus
+      setTimeout(() => {
+        const nextIndex = Math.min(index + pastedData.length, 7);
+        inputRefs.current[nextIndex]?.focus();
+      }, 10);
+      return;
+    }
 
-    const buttonAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: buttonOpacity.value,
-    }));
+    // Normal typing
+    const char = text.slice(-1); // Take the last char entered
+    newOtp[index] = char;
+    setOtp(newOtp);
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={styles.keyboardView}
-                >
-                    <View style={styles.content}>
-                        <Animated.View style={[styles.header, titleAnimatedStyle]}>
-                            <Text style={styles.title}>Verification</Text>
-                        </Animated.View>
+    // Auto-focus next input with a tiny delay to ensure value is committed
+    if (char && index < 7) {
+      setTimeout(() => {
+        inputRefs.current[index + 1]?.focus();
+      }, 10);
+    }
+  };
 
-                        <Animated.View style={subtitleAnimatedStyle}>
-                            <Text style={styles.subtitle}>
-                                Enter the 4-digit code sent to{"\n"}
-                                <Text style={styles.contactText}>{contact}</Text>
-                            </Text>
-                        </Animated.View>
+  const handleKeyPress = (e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace') {
+      if (!otp[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+      }
+    }
+  };
 
-                        <Animated.View style={[styles.inputContainer, inputAnimatedStyle]}>
-                            <View style={styles.otpRow}>
-                                {otp.map((digit, index) => (
-                                    <TextInput
-                                        key={index}
-                                        style={styles.otpInput}
-                                        value={digit}
-                                        onChangeText={(text) => {
-                                            if (text.length <= 1) handleChangeOtp(text, index);
-                                            if (text.length === 1 && index < 3) {
-                                                // Rudimentary focus management could go here with refs
-                                            }
-                                        }}
-                                        keyboardType="number-pad"
-                                        maxLength={1}
-                                        selectTextOnFocus
-                                    />
-                                ))}
-                            </View>
-                        </Animated.View>
+  const titleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: titleOpacity.value,
+    transform: [{ translateY: titleTranslate.value }],
+  }));
 
-                        <Animated.View style={[styles.footer, buttonAnimatedStyle]}>
-                            <LuxuryButton
-                                title="Verify & Proceed"
-                                onPress={handleVerify}
-                                variant="primary"
-                                size="large"
-                                fullWidth
-                            />
+  const subtitleAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: subtitleOpacity.value,
+  }));
 
-                            <View style={styles.resendContainer}>
-                                <Text style={styles.resendText}>Didn't receive code? </Text>
-                                <TouchableWithoutFeedback onPress={isResendDisabled ? undefined : handleResend}>
-                                    <Text style={[styles.resendLink, isResendDisabled && styles.resendDisabled]}>
-                                        {isResendDisabled ? `Resend in ${timer}s` : "Resend"}
-                                    </Text>
-                                </TouchableWithoutFeedback>
-                            </View>
-                        </Animated.View>
-                    </View>
-                </KeyboardAvoidingView>
-            </TouchableWithoutFeedback>
-        </SafeAreaView>
-    );
+  const inputAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: inputOpacity.value,
+    transform: [{ translateY: inputTranslate.value }],
+  }));
+
+  const buttonAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: buttonOpacity.value,
+  }));
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <AppHeader 
+        icon="back" 
+        onMenuPress={() => router.back()} 
+        showWishlist={false} 
+        showSearch={false} 
+      />
+      <View style={styles.keyboardView}>
+        <View style={styles.content}>
+          <Animated.View style={[styles.header, titleAnimatedStyle]}>
+            <Text style={styles.title}>Account Verification</Text>
+          </Animated.View>
+
+          <Animated.View style={subtitleAnimatedStyle}>
+            <Text style={styles.subtitle}>
+              We've sent an 8-digit secure code to{"\n"}
+              <Text style={styles.contactText}>{contact}</Text>
+            </Text>
+          </Animated.View>
+
+          <Animated.View style={[styles.inputContainer, inputAnimatedStyle]}>
+            <View style={styles.otpGrid}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => {
+                    if (ref) inputRefs.current[index] = ref;
+                  }}
+                  style={[
+                    styles.otpInput,
+                    otp[index] ? styles.otpInputActive : null
+                  ]}
+                  value={digit}
+                  onChangeText={(text) => handleChangeOtp(text, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
+                  keyboardType="numeric"
+                  inputMode="numeric"
+                  maxLength={1} // Consistently 1 for all platforms
+                  selectTextOnFocus
+                  textAlign="center"
+                  autoFocus={index === 0}
+                />
+              ))}
+            </View>
+          </Animated.View>
+
+          <Animated.View style={[styles.footer, buttonAnimatedStyle]}>
+            <LuxuryButton
+              title={loading ? "Verifying..." : "Confirm Verification"}
+              onPress={handleVerify}
+              variant="primary"
+              size="large"
+              fullWidth
+              disabled={loading}
+            />
+
+            <View style={styles.resendContainer}>
+              <Text style={styles.resendText}>Didn't receive code? </Text>
+              <TouchableWithoutFeedback onPress={isResendDisabled ? undefined : handleResend}>
+                <Text style={[styles.resendLink, isResendDisabled && styles.resendDisabled]}>
+                  {isResendDisabled ? `Resend in ${timer}s` : "Resend Now"}
+                </Text>
+              </TouchableWithoutFeedback>
+            </View>
+          </Animated.View>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: palette.white,
-    },
-    keyboardView: {
-        flex: 1,
-    },
-    content: {
-        flex: 1,
-        padding: spacing.lg,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    header: {
-        marginBottom: spacing.sm,
-    },
-    title: {
-        ...typography.h1,
-        color: palette.textPrimary,
-        textAlign: "center",
-    },
-    subtitle: {
-        ...typography.body, // Fixed: removed .regular which doesn't exist on typography.body
-        color: palette.textSecondary,
-        textAlign: "center",
-        marginBottom: spacing.xl,
-        lineHeight: 24,
-    },
-    contactText: {
-        color: palette.textPrimary,
-        fontWeight: "600",
-    },
-    inputContainer: {
-        width: "100%",
-        marginBottom: spacing.xl,
-    },
-    otpRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        gap: spacing.sm,
-        maxWidth: 300,
-        alignSelf: "center",
-    },
-    otpInput: {
-        width: 60,
-        height: 60,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: palette.divider, // Use palette.divider or a specific gold like "rgba(212, 175, 55, 0.3)"
-        backgroundColor: palette.white,
-        textAlign: "center",
-        fontSize: 24,
-        color: palette.textPrimary,
-        ...typography.h2,
-    },
-    footer: {
-        width: "100%",
-        gap: spacing.lg,
-    },
-    resendContainer: {
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    resendText: {
-        ...typography.bodySmall,
-        color: palette.textSecondary,
-    },
-    resendLink: {
-        ...typography.bodySmall,
-        color: palette.gold,
-        fontWeight: "600",
-    },
-    resendDisabled: {
-        color: palette.textSecondary,
-        opacity: 0.7,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: palette.ivory,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: spacing.lg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  header: {
+    marginBottom: spacing.xs,
+  },
+  title: {
+    ...typography.h1,
+    color: palette.textPrimary,
+    textAlign: "center",
+  },
+  subtitle: {
+    ...typography.body,
+    color: palette.textSecondary,
+    textAlign: "center",
+    marginBottom: spacing.xl,
+    lineHeight: 24,
+  },
+  contactText: {
+    color: palette.textPrimary,
+    fontWeight: "600",
+  },
+  inputContainer: {
+    width: "100%",
+    marginBottom: spacing.xxl,
+  },
+  otpGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+  },
+  otpInput: {
+    width: 44,
+    height: 52,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: "rgba(198, 162, 77, 0.2)",
+    backgroundColor: palette.white,
+    fontSize: 22,
+    color: palette.textPrimary,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
+    ...shadow.card,
+  },
+  otpInputActive: {
+    borderColor: palette.gold,
+    borderWidth: 1.5,
+  },
+  footer: {
+    width: "100%",
+    gap: spacing.lg,
+  },
+  resendContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  resendText: {
+    ...typography.bodySmall,
+    color: palette.textSecondary,
+  },
+  resendLink: {
+    ...typography.bodySmall,
+    color: palette.gold,
+    fontWeight: "600",
+  },
+  resendDisabled: {
+    color: palette.textSecondary,
+    opacity: 0.6,
+  },
 });

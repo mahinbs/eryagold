@@ -1,7 +1,19 @@
 import { Feather } from "@expo/vector-icons";
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { AppHeader } from "../../components/AppHeader";
-import { palette, radius, spacing } from "../../constants/theme";
+import { palette, radius, spacing, typography } from "../../constants/theme";
+import { submitInquiry } from "../../supabase/api";
 
 const quickTemplates = [
   "Share bridal catalogue",
@@ -17,20 +29,73 @@ const stylists = [
 ];
 
 export default function WhatsAppScreen() {
+  const { designId, subject } = useLocalSearchParams<{ designId?: string; subject?: string }>();
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleInquirySubmit = async () => {
+    if (!message.trim()) {
+      Alert.alert("Error", "Please enter a message.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // For now, we use a placeholder profileId or get it from auth if implemented
+      // In a real app, we'd get the current user's ID
+      // For this demo, let's assume we have a guest or fixed ID if not logged in
+      const profileId = "00000000-0000-0000-0000-000000000000"; // Placeholder
+      
+      await submitInquiry(profileId, designId || null, subject || "General Inquiry", message);
+      Alert.alert("Success", "Your inquiry has been sent to our stylists. We will get back to you shortly.");
+      setMessage("");
+    } catch (error) {
+      console.error("Error submitting inquiry:", error);
+      Alert.alert("Error", "Failed to send inquiry. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppHeader />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100, gap: spacing.lg }}
       >
         <View style={styles.hero}>
           <View style={{ flex: 1, gap: spacing.xs }}>
             <Text style={styles.heroLabel}>Concierge access</Text>
             <Text style={styles.heroTitle}>WhatsApp our stylists</Text>
+            {subject && (
+              <View style={styles.inquiryBadge}>
+                <Text style={styles.inquiryBadgeText}>Inquiring about: {subject}</Text>
+              </View>
+            )}
             <Text style={styles.heroCopy}>
               Instant replies for sizing, pricing, delivery slots and bespoke commissions.
             </Text>
+            
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.messageInput}
+                placeholder="Type your message here..."
+                placeholderTextColor={palette.textSecondary}
+                multiline
+                value={message}
+                onChangeText={setMessage}
+              />
+              <TouchableOpacity 
+                style={[styles.submitButton, loading && { opacity: 0.7 }]} 
+                onPress={handleInquirySubmit}
+                disabled={loading}
+              >
+                <Text style={styles.submitButtonText}>{loading ? "Sending..." : "Submit Inquiry"}</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.heroButton}>
               <Feather name="message-circle" size={18} color={palette.white} />
               <Text style={styles.heroButtonLabel}>Open WhatsApp</Text>
@@ -144,6 +209,45 @@ const styles = StyleSheet.create({
   heroButtonLabel: {
     color: palette.white,
     fontWeight: "600",
+  },
+  inquiryBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+    alignSelf: "flex-start",
+    marginBottom: spacing.xs,
+  },
+  inquiryBadgeText: {
+    color: palette.white,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  inputContainer: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  messageInput: {
+    backgroundColor: palette.white,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    minHeight: 100,
+    textAlignVertical: "top",
+    color: palette.textPrimary,
+    borderWidth: 1,
+    borderColor: palette.divider,
+  },
+  submitButton: {
+    backgroundColor: palette.green,
+    borderRadius: radius.full,
+    paddingVertical: spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitButtonText: {
+    color: palette.white,
+    fontWeight: "700",
+    fontSize: 14,
   },
   card: {
     backgroundColor: palette.goldCream, // Cream gold for cards

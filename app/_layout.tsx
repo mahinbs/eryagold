@@ -2,7 +2,10 @@ import { useFonts } from "expo-font";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, View } from "react-native";
+import { ToastProvider, useToast } from "../utils/toast";
+import { Toast } from "../components/Toast";
+import { WishlistProvider } from "./context/WishlistContext";
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -22,48 +25,30 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  // Reset to splash screen when app comes to foreground after being killed
+  // Navigation logic and AppState monitoring
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextAppState: AppStateStatus) => {
-      // Only reset if app was in background and is now active
-      // This ensures splash shows when app is reopened
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === "active" &&
-        !isNavigating.current
-      ) {
-        // Use setTimeout to ensure router is ready
-        setTimeout(() => {
-          const currentRoute = segments[0];
-          // Reset to splash screen if not already there
-          if (currentRoute && currentRoute !== "(tabs)") {
-            isNavigating.current = true;
-            router.replace("/");
-            // Reset flag after navigation
-            setTimeout(() => {
-              isNavigating.current = false;
-            }, 500);
-          }
-        }, 100);
-      }
-      appState.current = nextAppState;
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [segments, router]);
+    appState.current = AppState.currentState;
+    
+    // We removed the automatic redirect to "/" on AppState changes 
+    // to prevent the splash screen from re-triggering on tab switches 
+    // or when the app comes back from the background.
+  }, []);
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: "fade",
-        animationDuration: 300,
-        contentStyle: {
-          backgroundColor: "#FFFFFF", // White background
-        },
-      }}
-    />
+    <ToastProvider>
+      <WishlistProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "fade",
+            animationDuration: 300,
+            contentStyle: {
+              backgroundColor: "#FFFFFF", // White background
+            },
+          }}
+        />
+        <Toast />
+      </WishlistProvider>
+    </ToastProvider>
   );
 }

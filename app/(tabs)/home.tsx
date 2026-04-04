@@ -46,31 +46,10 @@ const heroSlides = [
   },
 ];
 
-// Featured Collections
-const featuredCollections = [
-  {
-    name: "Bridal Collection",
-    image: require("../../assets/jawellery-images/jawelery-image-2.jpg"),
-  },
-  {
-    name: "Daily Wear",
-    image: require("../../assets/jawellery-images/jawellery-12.jpg"),
-  },
-  {
-    name: "Statement Pieces",
-    image: require("../../assets/jawellery-images/jawellery-13.jpg"),
-  },
-];
+// Featured Collections (Initial empty, will be fetched)
+// const featuredCollections = [ ... ];
 
-// Browse Category Items (from old sidebar)
-const browseCategoryItems = [
-  "Necklaces",
-  "Rings",
-  "Bangles",
-  "Earrings",
-  "Bridal Sets",
-  "Men's Edit",
-];
+// Category tags are now fetched dynamic from Supabase Categories table
 
 // Drawer Menu Items (old sidebar)
 const drawerMenuItems = [
@@ -80,22 +59,24 @@ const drawerMenuItems = [
   "Call Us",
 ];
 
-// Category Type Options
-const categoryTypeOptions: Record<string, string[]> = {
-  Necklaces: ["All", "Long", "Short", "Pendant"],
-  Rings: ["All", "Solitaire", "Cocktail", "Bands"],
-  Bangles: ["All", "Kadas", "Stacks"],
-  Earrings: ["All", "Studs", "Chandbalis", "Drops"],
-  "Bridal Sets": ["All", "Necklace Set", "Full Bridal"],
-  "Men's Edit": ["All", "Rings", "Accessories"],
-};
+// Category tags are now fetched from Supabase
+// const categoryTypeOptions = { ... };
+
+import { getDesigns, getFeaturedCollections, getCategories, getDistinctMaterials } from "../../supabase/api";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [materialModalVisible, setMaterialModalVisible] = useState(false);
   const [categoryToConfigure, setCategoryToConfigure] = useState<string | null>(null);
+  const [materials, setMaterials] = useState<string[]>([]);
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [designs, setDesigns] = useState<any[]>([]);
+  const [featuredCollections, setFeaturedCollections] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const router = useRouter();
   const heroScrollRef = useRef<ScrollView>(null);
   const drawerX = useRef(new Animated.Value(-width)).current;
@@ -103,6 +84,25 @@ export default function Home() {
   // Calculate card width for carousel
   const cardWidth = width - spacing.lg * 2;
   const cardWithMargin = cardWidth + spacing.lg;
+
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        const [designsData, collectionsData, categoriesData] = await Promise.all([
+          getDesigns(),
+          getFeaturedCollections(),
+          getCategories()
+        ]);
+        setDesigns(designsData || []);
+        setFeaturedCollections(collectionsData || []);
+        setCategories(categoriesData || []);
+      } catch (error) {
+        console.error("Error fetching home data:", error);
+      }
+    };
+    fetchHomeData();
+  }, []);
 
   // Auto-scroll hero banner
   useEffect(() => {
@@ -131,24 +131,61 @@ export default function Home() {
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
 
-  const handleProductPress = (product: typeof jewellerySpotlight[0]) => {
+  const handleProductPress = (product: any) => {
     router.push({
       pathname: "/product-details",
-      params: { name: product.name },
+      params: { designId: product.id },
     });
   };
 
-  const handleCategoryPress = (category: string) => {
-    // Check if category has type options
-    if (categoryTypeOptions[category] && categoryTypeOptions[category].length > 1) {
-      setCategoryToConfigure(category);
+  const handleCategoryPress = async (categoryName: string) => {
+    setCategoryToConfigure(categoryName);
+    try {
+      const distinctMaterials = await getDistinctMaterials(categoryName);
+      if (distinctMaterials.length > 0) {
+        setMaterials(distinctMaterials as string[]);
+        setMaterialModalVisible(true);
+      } else {
+        // No materials? Check for tags or go straight
+        const selectedCategory = categories.find(c => c.name === categoryName);
+        const availableTags = selectedCategory?.tags || [];
+        if (availableTags.length > 0) {
+          setSelectedMaterial(null);
+          setCategoryModalVisible(true);
+        } else {
+          router.push({
+            pathname: "/category",
+            params: { name: categoryName },
+          });
+        }
+      }
+    } catch (error) {
+       console.error("Error fetching materials:", error);
+       router.push({
+         pathname: "/category",
+         params: { name: categoryName },
+       });
+    }
+  };
+
+  const handleMaterialSelect = (material: string) => {
+    setSelectedMaterial(material);
+    setMaterialModalVisible(false);
+    
+    // Check if category has tags
+    const selectedCategory = categories.find(c => c.name === categoryToConfigure);
+    const availableTags = selectedCategory?.tags || [];
+
+    if (availableTags.length > 0) {
       setSelectedType("All");
       setCategoryModalVisible(true);
     } else {
-      // Navigate directly if no type options
       router.push({
         pathname: "/category",
-        params: { name: category },
+        params: { 
+          name: categoryToConfigure!,
+          material: material
+        },
       });
     }
   };
@@ -159,17 +196,21 @@ export default function Home() {
         pathname: "/category",
         params: {
           name: categoryToConfigure,
-          type: selectedType ?? "All",
+          tag: selectedType ?? "All",
+          material: selectedMaterial ?? "",
         },
       });
     }
     setCategoryModalVisible(false);
   };
 
-  const handleCollectionPress = (collection: typeof featuredCollections[0]) => {
+  const handleCollectionPress = (collection: any) => {
     router.push({
       pathname: "/category",
-      params: { name: collection.name },
+      params: { 
+        name: collection.name,
+        collectionId: collection.id
+      },
     });
   };
 
@@ -233,14 +274,19 @@ export default function Home() {
             <Text style={styles.sectionTitle}>Browse Categories</Text>
           </View>
           <View style={styles.browseCategoryGrid}>
-            {browseCategoryItems.map((category, index) => (
+            {categories.map((category, index) => (
               <BrowseCategoryCard
-                key={category}
-                category={category}
+                key={category.id}
+                category={category.name}
                 index={index}
-                onPress={() => handleCategoryPress(category)}
+                onPress={() => handleCategoryPress(category.name)}
               />
             ))}
+            {categories.length === 0 && (
+              <View style={{ padding: 20, alignItems: 'center', width: '100%' }}>
+                <Text style={{ color: palette.textSecondary }}>No categories defined.</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -274,14 +320,19 @@ export default function Home() {
             <Text style={styles.sectionTitle}>Best Sellers</Text>
           </View>
           <View style={styles.productGrid}>
-            {jewellerySpotlight.map((product, index) => (
+            {designs.map((product, index) => (
               <ProductCard
-                key={product.name}
+                key={product.id}
                 product={product}
                 index={index}
                 onPress={() => handleProductPress(product)}
               />
             ))}
+            {designs.length === 0 && (
+              <View style={{ padding: 20, alignItems: 'center', width: '100%' }}>
+                <Text style={{ color: palette.textSecondary }}>No designs found.</Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -315,26 +366,59 @@ export default function Home() {
         </View>
         <View style={styles.drawerSection}>
           <Text style={styles.drawerSectionTitle}>Browse Category</Text>
-          {browseCategoryItems.map((item) => (
+          {categories.map((category: any) => (
             <TouchableOpacity
-              key={item}
+              key={category.id}
               style={styles.drawerMenuItem}
               onPress={() => {
                 setDrawerOpen(false);
                 router.push({
                   pathname: "/category",
-                  params: { name: item },
+                  params: { name: category.name },
                 });
               }}
             >
-              <Text style={styles.drawerMenuItemLabel}>{item}</Text>
+              <Text style={styles.drawerMenuItemLabel}>{category.name}</Text>
               <Feather name="chevron-right" size={18} color={palette.gold} />
             </TouchableOpacity>
           ))}
         </View>
       </Animated.View>
 
-      {/* Category Type Modal */}
+      {/* Material Selection Modal */}
+      <Modal
+        visible={materialModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMaterialModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Select Material</Text>
+            <ScrollView style={styles.modalList}>
+              {materials.map((m) => (
+                <TouchableOpacity
+                  key={m}
+                  style={styles.modalItem}
+                  onPress={() => handleMaterialSelect(m)}
+                >
+                  <Text style={styles.modalItemLabel}>{m}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setMaterialModalVisible(false)}
+              >
+                <Text style={styles.modalButtonSecondaryLabel}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Category Type Selection Modal */}
       <Modal
         visible={categoryModalVisible}
         transparent
@@ -348,8 +432,25 @@ export default function Home() {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>{categoryToConfigure}</Text>
             <ScrollView style={styles.modalList}>
+              <TouchableOpacity
+                style={[
+                  styles.modalItem,
+                  selectedType === "All" && styles.modalItemSelected,
+                ]}
+                onPress={() => setSelectedType("All")}
+              >
+                <Text
+                  style={[
+                    styles.modalItemLabel,
+                    selectedType === "All" && styles.modalItemLabelSelected,
+                  ]}
+                >
+                  Show All
+                </Text>
+              </TouchableOpacity>
+              
               {categoryToConfigure &&
-                (categoryTypeOptions[categoryToConfigure] ?? ["All"]).map((type) => (
+                (categories.find(c => c.name === categoryToConfigure)?.tags || []).map((type: string) => (
                   <TouchableOpacity
                     key={type}
                     style={[
@@ -479,7 +580,7 @@ function CollectionCard({
   index,
   onPress,
 }: {
-  collection: typeof featuredCollections[0];
+  collection: any;
   index: number;
   onPress: () => void;
 }) {
@@ -506,7 +607,13 @@ function CollectionCard({
         onPress={onPress}
         activeOpacity={0.9}
       >
-        <Image source={collection.image} style={styles.collectionImage} resizeMode="cover" />
+        {collection.image_url ? (
+          <Image source={{ uri: collection.image_url }} style={styles.collectionImage} resizeMode="cover" />
+        ) : (
+          <View style={[styles.collectionImage, { backgroundColor: palette.divider, alignItems: 'center', justifyContent: 'center' }]}>
+            <Feather name="image" size={40} color={palette.gold} />
+          </View>
+        )}
         <View style={styles.collectionOverlay} />
         <Text style={styles.collectionName}>{collection.name}</Text>
       </TouchableOpacity>
@@ -520,10 +627,12 @@ function ProductCard({
   index,
   onPress,
 }: {
-  product: typeof jewellerySpotlight[0];
+  product: any;
   index: number;
   onPress: () => void;
 }) {
+  const { wishlistIds, toggleItem } = useWishlist();
+  const isWishlisted = wishlistIds.includes(product.id);
   const translateY = useSharedValue(animations.pageLoad.slide);
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.95);
@@ -542,6 +651,10 @@ function ProductCard({
     opacity: opacity.value,
   }));
 
+  const imageSource = product.image_url 
+    ? { uri: product.image_url } 
+    : require("../../assets/jawellery-images/jawelery-image-2.jpg");
+
   return (
     <AnimatedComponent.View style={animatedStyle}>
       <TouchableOpacity
@@ -549,14 +662,30 @@ function ProductCard({
         onPress={onPress}
         activeOpacity={0.9}
       >
-        <Image source={product.image} style={styles.productImage} resizeMode="cover" />
+        <View style={{ position: 'relative' }}>
+          <Image source={imageSource} style={styles.productImage} />
+          <TouchableOpacity 
+            style={styles.favButton}
+            onPress={() => toggleItem(product.id)}
+          >
+            <Feather 
+              name={isWishlisted ? "heart" : "heart"} 
+              size={18} 
+              color={palette.gold} 
+              fill={isWishlisted ? palette.gold : "transparent"}
+            />
+          </TouchableOpacity>
+        </View>
         <View style={styles.productInfo}>
-          <Text style={styles.productName} numberOfLines={2}>
-            {product.name}
-          </Text>
-          <Text style={styles.productPrice} numberOfLines={1}>
-            {product.detail}
-          </Text>
+          <View>
+            <Text style={styles.productCategory} numberOfLines={1}>
+              {product.material || (product.category === 'Necklaces' ? '22K Polki' : 'Fine Jewellery')}
+            </Text>
+            <Text style={styles.productName} numberOfLines={1}>
+              {product.name}
+            </Text>
+          </View>
+          <Text style={styles.productPrice}>{product.price || 'P.O.E.'}</Text>
         </View>
       </TouchableOpacity>
     </AnimatedComponent.View>
@@ -725,11 +854,32 @@ const styles = StyleSheet.create({
     height: 180, // Reduced image height to show content
     backgroundColor: palette.divider,
   },
+  favButton: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    zIndex: 1,
+    ...shadow.card,
+  },
   productInfo: {
     padding: spacing.md,
     flex: 1,
     justifyContent: "space-between",
     minHeight: 100, // Ensure enough space for content
+  },
+  productCategory: {
+    ...typography.caption,
+    fontSize: 10,
+    color: palette.gold,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 2,
   },
   productName: {
     ...typography.body,

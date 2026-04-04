@@ -24,25 +24,52 @@ import { animations, palette, radius, shadow, spacing, typography } from "../../
 
 const { width } = Dimensions.get("window");
 
-// Mock wishlist data - in real app, this would come from state/API
-const wishlistItems = jewellerySpotlight.slice(0, 3);
+import { getWishlist, toggleWishlist } from "../../supabase/api";
+import { useToast } from "../../utils/toast";
+
+const DUMMY_PROFILE_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function WishlistScreen() {
   const router = useRouter();
-  const [items, setItems] = useState(wishlistItems);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
-  const handleRemove = (itemName: string) => {
-    setItems(items.filter((item) => item.name !== itemName));
+  useEffect(() => {
+    fetchWishlist();
+  }, []);
+
+  const fetchWishlist = async () => {
+    setLoading(true);
+    try {
+      const data = await getWishlist(DUMMY_PROFILE_ID);
+      // Data is already mapped in api/index.ts
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching wishlist:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleProductPress = (product: typeof jewellerySpotlight[0]) => {
+  const handleRemove = async (designId: string, name: string) => {
+    try {
+      await toggleWishlist(DUMMY_PROFILE_ID, designId);
+      setItems(prev => prev.filter((item) => item.id !== designId));
+      showToast(`${name} removed from wishlist`, "info");
+    } catch (error: any) {
+      showToast(error.message || "Failed to remove item", "error");
+    }
+  };
+
+  const handleProductPress = (product: any) => {
     router.push({
       pathname: "/product-details",
-      params: { name: product.name },
+      params: { id: product.id },
     });
   };
 
-  if (items.length === 0) {
+  if (!loading && items.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
@@ -80,7 +107,7 @@ export default function WishlistScreen() {
               product={product}
               index={index}
               onPress={() => handleProductPress(product)}
-              onRemove={() => handleRemove(product.name)}
+              onRemove={() => handleRemove(product.id, product.name)}
             />
           ))}
         </View>
@@ -95,10 +122,10 @@ function WishlistProductCard({
   onPress,
   onRemove,
 }: {
-  product: typeof jewellerySpotlight[0];
+  product: any;
   index: number;
   onPress: () => void;
-  onRemove: () => void;
+  onRemove: (id: string) => void;
 }) {
   const translateY = useSharedValue(animations.pageLoad.slide);
   const opacity = useSharedValue(0);
@@ -117,7 +144,7 @@ function WishlistProductCard({
       withTiming(1.2, { duration: animations.wishlistRipple }),
       withTiming(1, { duration: animations.wishlistRipple })
     );
-    setTimeout(onRemove, animations.wishlistRipple);
+    setTimeout(() => onRemove(product.id), animations.wishlistRipple);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -129,6 +156,10 @@ function WishlistProductCard({
     transform: [{ scale: heartScale.value }],
   }));
 
+  const imageSource = product.image_url 
+    ? { uri: product.image_url } 
+    : require("../../assets/jawellery-images/jawelery-image-2.jpg");
+
   return (
     <Animated.View style={animatedStyle}>
       <TouchableOpacity
@@ -136,7 +167,7 @@ function WishlistProductCard({
         onPress={onPress}
         activeOpacity={0.9}
       >
-        <Image source={product.image} style={styles.productImage} resizeMode="cover" />
+        <Image source={imageSource} style={styles.productImage} resizeMode="cover" />
         <Animated.View style={[styles.heartButton, heartAnimatedStyle]}>
           <TouchableOpacity onPress={handleHeartPress} activeOpacity={0.7}>
             <Feather name="heart" size={20} color={palette.gold} fill={palette.gold} />
@@ -147,7 +178,7 @@ function WishlistProductCard({
             {product.name}
           </Text>
           <Text style={styles.productDetail} numberOfLines={1}>
-            {product.detail}
+            {product.price || 'Price on Enquiry'}
           </Text>
         </View>
       </TouchableOpacity>

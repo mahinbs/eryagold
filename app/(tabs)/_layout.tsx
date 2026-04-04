@@ -73,13 +73,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* Hide cart and wishlist from bottom menu - they're in header */}
-      <Tabs.Screen
-        name="cart"
-        options={{
-          href: null, // Hide from tab bar
-        }}
-      />
+      {/* Hide wishlist from bottom menu - they're in header */}
       <Tabs.Screen
         name="wishlist"
         options={{

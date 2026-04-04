@@ -69,6 +69,7 @@ export const spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  xxxl: 64,
 };
 
 export const radius = {
@@ -168,6 +169,22 @@ export const typography = {
     letterSpacing: 0.2,
     lineHeight: 26,
     fontFamily: "serif", // Serif for prices
+  },
+  button: {
+    fontSize: 16,
+    fontWeight: "500" as const,
+    letterSpacing: 1,
+    lineHeight: 24,
+    fontFamily: "sans-serif",
+    textTransform: "uppercase" as const,
+  },
+  buttonLarge: {
+    fontSize: 18,
+    fontWeight: "500" as const,
+    letterSpacing: 1.5,
+    lineHeight: 26,
+    fontFamily: "sans-serif",
+    textTransform: "uppercase" as const,
   },
 };
 

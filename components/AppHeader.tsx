@@ -16,7 +16,6 @@ type AppHeaderProps = {
   icon?: "menu" | "back";
   showSearch?: boolean;
   showWishlist?: boolean;
-  showCart?: boolean;
 };
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
@@ -26,13 +25,11 @@ function AppHeaderComponent({
   icon = "menu",
   showSearch = true,
   showWishlist = true,
-  showCart = true,
 }: AppHeaderProps) {
   const router = useRouter();
   const iconName = icon === "back" ? "chevron-left" : "menu";
   const searchScale = useSharedValue(1);
   const wishlistScale = useSharedValue(1);
-  const cartScale = useSharedValue(1);
 
   const handleMenuPress = () => {
     if (onMenuPress) {
@@ -56,24 +53,12 @@ function AppHeaderComponent({
     );
   };
 
-  const handleCartPress = () => {
-    router.push("/(tabs)/cart");
-    cartScale.value = withSequence(
-      withTiming(0.95, { duration: 100 }),
-      withSpring(1, { damping: 10, stiffness: 200 })
-    );
-  };
-
   const searchAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: searchScale.value }],
   }));
 
   const wishlistAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: wishlistScale.value }],
-  }));
-
-  const cartAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: cartScale.value }],
   }));
 
   const iconButton =
@@ -114,15 +99,6 @@ function AppHeaderComponent({
             activeOpacity={0.7}
           >
             <Feather name="heart" size={20} color={palette.textPrimary} />
-          </AnimatedTouchable>
-        )}
-        {showCart && (
-          <AnimatedTouchable 
-            style={[styles.iconButton, cartAnimatedStyle]} 
-            onPress={handleCartPress}
-            activeOpacity={0.7}
-          >
-            <Feather name="shopping-bag" size={20} color={palette.textPrimary} />
           </AnimatedTouchable>
         )}
       </View>

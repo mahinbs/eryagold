@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -9,44 +9,116 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { AppHeader } from "../components/AppHeader";
-import { catalogByCategory } from "../constants/catalog";
+import { getDesigns, getDesignsByCollection } from "../supabase/api";
 import { palette, radius, shadow, spacing, typography } from "../constants/theme";
+import { useToast } from "../utils/toast";
+import { useWishlist } from "./context/WishlistContext";
 
 const { width } = Dimensions.get("window");
 
 export default function CategoryScreen() {
-  const { name } = useLocalSearchParams<{ name?: string }>();
+  const { name, tag, material, collectionId } = useLocalSearchParams<{ 
+    name?: string, 
+    tag?: string,
+    material?: string,
+    collectionId?: string 
+  }>();
   const router = useRouter();
+  const [items, setItems] = useState<any[]>([]);
+  const { wishlistIds, toggleItem } = useWishlist();
+  const [loading, setLoading] = useState(true);
 
   const categoryName = name ?? "Necklaces";
-  const items = useMemo(() => catalogByCategory[categoryName] ?? [], [categoryName]);
+  const displayTitle = material ? `${material} ${categoryName}` : categoryName;
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    fetchItems();
+  }, [categoryName, tag, material, collectionId]);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      let data;
+      if (collectionId) {
+        data = await getDesignsByCollection(collectionId);
+      } else {
+        data = await getDesigns(categoryName, tag, material);
+      }
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching category items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleWishlist = async (id: string, name: string) => {
+    await toggleItem(id);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppHeader icon="back" onMenuPress={() => router.back()} />
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
         <View style={styles.hero}>
-          <Text style={styles.breadcrumb}>Collection · {categoryName}</Text>
-          <Text style={styles.title}>{categoryName}</Text>
+          <Text style={styles.breadcrumb}>
+            Collection · {categoryName} {tag && tag !== 'All' && `· ${tag}`}
+          </Text>
+          <Text style={styles.title}>{displayTitle}</Text>
           <Text style={styles.copy}>
-            Explore couture-ready pieces curated for {categoryName.toLowerCase()} lovers. Tap any
-            product to request price, video or WhatsApp styling.
+            {tag && tag !== 'All' 
+              ? `Exploring our finest ${tag.toLowerCase()} ${categoryName.toLowerCase()}.`
+              : `Explore couture-ready pieces curated for ${categoryName.toLowerCase()} lovers.`
+            } Tap any product to request price, video or WhatsApp styling.
           </Text>
         </View>
         <View style={styles.grid}>
-          {items.map((item) => (
-            <TouchableOpacity key={item.name} style={styles.card}>
-              <Image source={item.image} style={styles.image} />
-              <View style={styles.cardBody}>
-                <Text style={styles.cardName}>{item.name}</Text>
-                <Text style={styles.cardDescription}>{item.description}</Text>
-                <Text style={styles.cardPrice}>{item.price}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-          {items.length === 0 && (
+          {loading ? (
+            <ActivityIndicator size="large" color={palette.gold} />
+          ) : (
+            items.map((item, index) => (
+              <TouchableOpacity 
+                key={item.id} 
+                style={styles.card}
+                onPress={() => router.push({
+                  pathname: "/product-details",
+                  params: { designId: item.id }
+                })}
+              >
+                <View style={{ position: 'relative' }}>
+                  <Image 
+                    source={item.image_url ? { uri: item.image_url } : require("../assets/jawellery-images/jawelery-image-2.jpg")} 
+                    style={styles.image} 
+                    resizeMode="contain"
+                  />
+                  <TouchableOpacity 
+                    style={styles.favButton}
+                    onPress={() => handleToggleWishlist(item.id, item.name)}
+                  >
+                    <Feather 
+                      name={wishlistIds.includes(item.id) ? "heart" : "heart"} 
+                      size={18} 
+                      color={palette.gold} 
+                      fill={wishlistIds.includes(item.id) ? palette.gold : "transparent"}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.cardBody}>
+                  <View>
+                    <Text style={styles.cardCategory}>{item.material || 'Premium Gold'}</Text>
+                    <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
+                  </View>
+                  <Text style={styles.cardPrice}>{item.price || 'P.O.E.'}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+          {!loading && items.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>Coming soon</Text>
               <Text style={styles.emptyCopy}>
@@ -100,38 +172,54 @@ const styles = StyleSheet.create({
   },
   card: {
     width: (width - spacing.lg * 2 - spacing.md) / 2, // 2 cards per row with gap
-    height: 360, // Fixed height for all cards
-    borderRadius: radius.md,
     backgroundColor: palette.white,
+    borderRadius: radius.lg,
     overflow: "hidden",
     ...shadow.card,
+    marginBottom: spacing.md,
   },
   image: {
     width: "100%",
-    height: 200, // Reduced image height to show content
-    backgroundColor: palette.divider,
+    height: 180,
+    backgroundColor: palette.ivory,
+  },
+  favButton: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    zIndex: 1,
+    ...shadow.card,
   },
   cardBody: {
-    padding: spacing.lg,
+    padding: spacing.md,
     gap: spacing.xs,
     flex: 1,
     justifyContent: "space-between",
   },
+  cardCategory: {
+    ...typography.caption,
+    fontSize: 10,
+    color: palette.gold,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
   cardName: {
     ...typography.h3,
+    fontSize: 14,
     color: palette.textPrimary,
-    marginBottom: spacing.xs / 2,
-  },
-  cardDescription: {
-    ...typography.bodySmall,
-    color: palette.textSecondary,
-    marginBottom: spacing.xs,
-    fontWeight: "300",
+    marginBottom: 4,
   },
   cardPrice: {
     ...typography.price,
+    fontSize: 15,
     color: palette.gold,
-    marginTop: spacing.xs,
   },
   emptyState: {
     width: "100%",

@@ -1,6 +1,7 @@
 import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -16,8 +17,10 @@ import Animated, {
   useSharedValue
 } from "react-native-reanimated";
 import LuxuryButton from "../components/LuxuryButton";
+import { supabase } from "../supabase/client";
 import { palette, radius, spacing, typography } from "../constants/theme";
 import { fadeIn, slideUp } from "../utils/animations";
+import { useToast } from "../utils/toast";
 
 export default function Login() {
   const router = useRouter();
@@ -38,8 +41,29 @@ export default function Login() {
     formTranslate.value = slideUp(200);
   }, []);
 
-  const handleLogin = () => {
-    router.replace("/(tabs)/home");
+  const [loading, setLoading] = useState(false);
+
+  const { showToast } = useToast();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      showToast("Please fill in all fields.", "error");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      showToast(error.message, "error");
+      setLoading(false);
+    } else {
+      showToast("Signed in successfully", "success");
+      router.replace("/(tabs)/home");
+    }
   };
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -110,11 +134,12 @@ export default function Login() {
           {/* Buttons */}
           <Animated.View style={[styles.buttonContainer, formAnimatedStyle]}>
             <LuxuryButton
-              title="Sign In"
+              title={loading ? "Signing In..." : "Sign In"}
               onPress={handleLogin}
               variant="primary"
               size="large"
               fullWidth
+              disabled={loading}
             />
 
             <LuxuryButton
@@ -215,4 +240,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

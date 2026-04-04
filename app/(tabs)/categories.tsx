@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -18,13 +18,30 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { AppHeader } from "../../components/AppHeader";
-import { categoryData, catalogByCategory } from "../../constants/catalog";
+import { getCategories, getDesigns } from "../../supabase/api";
 import { animations, palette, radius, shadow, spacing, typography } from "../../constants/theme";
 
 const { width } = Dimensions.get("window");
 
 export default function CategoriesScreen() {
   const router = useRouter();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const data = await getCategories();
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCategoryPress = (category: string) => {
     router.push({
@@ -49,14 +66,20 @@ export default function CategoriesScreen() {
         </View>
 
         <View style={styles.categoriesGrid}>
-          {categoryData.map((category, index) => (
-            <CategoryCard
-              key={category.label}
-              category={category}
-              index={index}
-              onPress={() => handleCategoryPress(category.label)}
-            />
-          ))}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading collections...</Text>
+            </View>
+          ) : (
+            categories.map((category, index) => (
+              <CategoryCard
+                key={category.id}
+                category={category}
+                index={index}
+                onPress={() => handleCategoryPress(category.name)}
+              />
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -68,7 +91,7 @@ function CategoryCard({
   index,
   onPress,
 }: {
-  category: typeof categoryData[0];
+  category: any;
   index: number;
   onPress: () => void;
 }) {
@@ -88,9 +111,9 @@ function CategoryCard({
     opacity: opacity.value,
   }));
 
-  // Get first product image for category preview
-  const categoryProducts = catalogByCategory[category.label] || [];
-  const previewImage = categoryProducts[0]?.image;
+  const previewImage = category.image_url 
+    ? { uri: category.image_url } 
+    : require("../../assets/jawellery-images/jawelery-image-2.jpg");
 
   return (
     <Animated.View style={animatedStyle}>
@@ -106,8 +129,8 @@ function CategoryCard({
           </>
         )}
         <View style={styles.categoryContent}>
-          <Text style={styles.categoryName}>{category.label}</Text>
-          <Text style={styles.categoryCount}>{category.pieces} designs</Text>
+          <Text style={styles.categoryName}>{category.name}</Text>
+          <Text style={styles.categoryCount}>Explore Collection</Text>
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -181,6 +204,14 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: palette.textSecondary,
     fontWeight: "300",
+  },
+  loadingContainer: {
+    padding: spacing.xl,
+    alignItems: "center",
+  },
+  loadingText: {
+    ...typography.body,
+    color: palette.textSecondary,
   },
 });
 
