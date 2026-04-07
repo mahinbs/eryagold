@@ -1,20 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-} from "react-native";
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
+import { SafeAreaView } from "react-native-safe-area-context";
 import LuxuryButton from "../components/LuxuryButton";
 import { palette, radius, shadow, spacing, typography } from "../constants/theme";
-import { getDesignById, getCurrentUser } from "../supabase/api";
+import { getDesignById } from "../supabase/api";
 import { useToast } from "../utils/toast";
 import { useWishlist } from "./context/WishlistContext";
 
@@ -95,7 +87,8 @@ export default function ProductDetailsScreen() {
           <Image 
             source={design.image_url ? { uri: design.image_url } : require("../assets/jawellery-images/jawelery-image-2.jpg")} 
             style={styles.mainImage} 
-            resizeMode="contain"
+            contentFit="contain"
+            transition={300}
           />
           <TouchableOpacity 
             style={styles.floatingFavButton}

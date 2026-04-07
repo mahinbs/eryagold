@@ -1,22 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { 
-  ActivityIndicator, 
-  Modal, 
-  SafeAreaView, 
-  ScrollView, 
-  StyleSheet, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  View 
-} from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "../components/AppHeader";
+import { palette, spacing, typography } from "../constants/theme";
 import { getCurrentUser, getProfile, signOutUser, updateProfile } from "../supabase/api";
 import { useToast } from "../utils/toast";
-import { palette, spacing, typography } from "../constants/theme";
-import { useEffect, useState } from "react";
 
 // MYSA-STYLE PROFILE
 // Typography-led layout
@@ -149,7 +140,7 @@ export default function ProfileScreen() {
                 {loading ? "..." : profile?.full_name || "Valued Customer"}
               </Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.editIconButton}
               onPress={() => setIsEditModalVisible(true)}
               activeOpacity={0.7}
@@ -233,14 +224,14 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.modalFooter}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => setIsEditModalVisible(false)}
                   disabled={isSaving}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.modalButton, styles.saveButton]}
                   onPress={handleSaveProfile}
                   disabled={isSaving}

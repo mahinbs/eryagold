@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getWishlist, toggleWishlist, getCurrentUser } from '../../supabase/api';
-import { useToast } from '../../utils/toast';
+import { getWishlist, toggleWishlist, getCurrentUser } from '@/supabase/api';
+import { useToast } from '@/utils/toast';
 
 interface WishlistContextType {
   wishlistIds: string[];
@@ -21,7 +21,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       const user = await getCurrentUser();
       if (user) {
         const ids = await getWishlist(user.id);
-        setWishlistIds(ids.map((d: any) => d.id));
+        if (ids && Array.isArray(ids)) {
+          setWishlistIds(ids.map((d: any) => d.id));
+        } else {
+          setWishlistIds([]);
+        }
       } else {
         setWishlistIds([]);
       }

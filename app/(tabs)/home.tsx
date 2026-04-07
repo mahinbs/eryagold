@@ -2,19 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Dimensions,
-  Image,
-  Modal,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated, Dimensions, Image as RNImage, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AnimatedComponent, {
   useAnimatedStyle,
   useSharedValue,
@@ -522,7 +512,7 @@ function HeroSlideCard({
         animatedStyle
       ]}
     >
-      <Image source={slide.image} style={styles.heroImage} resizeMode="cover" />
+      <Image source={slide.image} style={styles.heroImage} contentFit="cover" transition={300} />
     </AnimatedComponent.View>
   );
 }
@@ -608,7 +598,7 @@ function CollectionCard({
         activeOpacity={0.9}
       >
         {collection.image_url ? (
-          <Image source={{ uri: collection.image_url }} style={styles.collectionImage} resizeMode="cover" />
+          <Image source={{ uri: collection.image_url }} style={styles.collectionImage} contentFit="cover" transition={300} />
         ) : (
           <View style={[styles.collectionImage, { backgroundColor: palette.divider, alignItems: 'center', justifyContent: 'center' }]}>
             <Feather name="image" size={40} color={palette.gold} />
@@ -663,7 +653,12 @@ function ProductCard({
         activeOpacity={0.9}
       >
         <View style={{ position: 'relative' }}>
-          <Image source={imageSource} style={styles.productImage} />
+          <Image 
+            source={imageSource} 
+            style={styles.productImage} 
+            contentFit="contain"
+            transition={300}
+          />
           <TouchableOpacity 
             style={styles.favButton}
             onPress={() => toggleItem(product.id)}

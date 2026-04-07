@@ -51,7 +51,7 @@ export const toggleWishlist = async (profileId: string, designId: string) => {
     .select('*')
     .eq('profile_id', profileId)
     .eq('design_id', designId)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     const { error } = await supabase
@@ -126,9 +126,13 @@ export const getDesignsByCollection = async (collectionId: string) => {
 
 // Profile Management
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  return user;
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) return null;
+    return user;
+  } catch (err) {
+    return null;
+  }
 };
 
 export const getProfile = async (userId: string) => {

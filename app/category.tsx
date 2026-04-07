@@ -1,16 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  Dimensions,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-} from "react-native";
+import { Dimensions, Image as RNImage, ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { AppHeader } from "../components/AppHeader";
 import { getDesigns, getDesignsByCollection } from "../supabase/api";
@@ -94,7 +86,8 @@ export default function CategoryScreen() {
                   <Image 
                     source={item.image_url ? { uri: item.image_url } : require("../assets/jawellery-images/jawelery-image-2.jpg")} 
                     style={styles.image} 
-                    resizeMode="contain"
+                    contentFit="contain"
+                    transition={300}
                   />
                   <TouchableOpacity 
                     style={styles.favButton}

@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef } from "react";
 import { AppState, AppStateStatus, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ToastProvider, useToast } from "../utils/toast";
 import { Toast } from "../components/Toast";
 import { WishlistProvider } from "./context/WishlistContext";
@@ -20,9 +21,16 @@ export default function RootLayout() {
   const isNavigating = useRef(false);
 
   useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
+    async function hideSplash() {
+      try {
+        if (loaded || error) {
+          await SplashScreen.hideAsync();
+        }
+      } catch (err) {
+        console.warn("Failed to hide splash screen:", err);
+      }
     }
+    hideSplash();
   }, [loaded, error]);
 
   // Navigation logic and AppState monitoring
@@ -35,20 +43,22 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ToastProvider>
-      <WishlistProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: "fade",
-            animationDuration: 300,
-            contentStyle: {
-              backgroundColor: "#FFFFFF", // White background
-            },
-          }}
-        />
-        <Toast />
-      </WishlistProvider>
-    </ToastProvider>
+    <SafeAreaProvider>
+      <ToastProvider>
+        <WishlistProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "fade",
+              animationDuration: 300,
+              contentStyle: {
+                backgroundColor: "#FFFFFF", // White background
+              },
+            }}
+          />
+          <Toast />
+        </WishlistProvider>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 }

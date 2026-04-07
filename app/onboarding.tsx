@@ -1,14 +1,6 @@
 import { useRef, useState } from "react";
-import {
-  Dimensions,
-  FlatList,
-  ImageBackground,
-  SafeAreaView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Dimensions, FlatList, ImageBackground, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { palette, radius, spacing } from "../constants/theme";
 

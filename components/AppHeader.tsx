@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { memo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -27,6 +28,7 @@ function AppHeaderComponent({
   showWishlist = true,
 }: AppHeaderProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const iconName = icon === "back" ? "chevron-left" : "menu";
   const searchScale = useSharedValue(1);
   const wishlistScale = useSharedValue(1);
@@ -34,6 +36,8 @@ function AppHeaderComponent({
   const handleMenuPress = () => {
     if (onMenuPress) {
       onMenuPress();
+    } else if (icon === "back") {
+      router.back();
     }
   };
 
@@ -62,7 +66,7 @@ function AppHeaderComponent({
   }));
 
   const iconButton =
-    onMenuPress != null ? (
+    onMenuPress != null || icon === "back" ? (
       <AnimatedTouchable 
         style={styles.iconButton} 
         onPress={handleMenuPress}
@@ -77,7 +81,7 @@ function AppHeaderComponent({
     );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.md) }]}>
       {iconButton}
       <View style={styles.logoContainer}>
         <Text style={styles.logoText}>Erya Gold</Text>

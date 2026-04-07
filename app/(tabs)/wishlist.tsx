@@ -2,16 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import {
-    Dimensions,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
@@ -24,26 +16,30 @@ import { animations, palette, radius, shadow, spacing, typography } from "../../
 
 const { width } = Dimensions.get("window");
 
-import { getWishlist, toggleWishlist } from "../../supabase/api";
+import { getCurrentUser, getWishlist } from "../../supabase/api";
 import { useToast } from "../../utils/toast";
-
-const DUMMY_PROFILE_ID = "00000000-0000-0000-0000-000000000000";
+import { useWishlist } from "../context/WishlistContext";
 
 export default function WishlistScreen() {
   const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { wishlistIds, refresh, toggleItem } = useWishlist();
   const { showToast } = useToast();
 
   useEffect(() => {
     fetchWishlist();
-  }, []);
+  }, [wishlistIds]);
 
   const fetchWishlist = async () => {
     setLoading(true);
     try {
-      const data = await getWishlist(DUMMY_PROFILE_ID);
-      // Data is already mapped in api/index.ts
+      const user = await getCurrentUser();
+      if (!user) {
+        setItems([]);
+        return;
+      }
+      const data = await getWishlist(user.id);
       setItems(data || []);
     } catch (error) {
       console.error("Error fetching wishlist:", error);
@@ -54,8 +50,8 @@ export default function WishlistScreen() {
 
   const handleRemove = async (designId: string, name: string) => {
     try {
-      await toggleWishlist(DUMMY_PROFILE_ID, designId);
-      setItems(prev => prev.filter((item) => item.id !== designId));
+      await toggleItem(designId);
+      // setItems will update automatically via useEffect on wishlistIds
       showToast(`${name} removed from wishlist`, "info");
     } catch (error: any) {
       showToast(error.message || "Failed to remove item", "error");
@@ -73,7 +69,12 @@ export default function WishlistScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
-        <AppHeader icon="back" showSearch={false} showWishlist={false} />
+      <AppHeader 
+        icon="back" 
+        showSearch={false} 
+        showWishlist={false} 
+        onMenuPress={() => router.back()}
+      />
         <View style={styles.emptyContainer}>
           <Feather name="heart" size={64} color={palette.divider} />
           <Text style={styles.emptyTitle}>Save pieces you love</Text>
@@ -88,7 +89,12 @@ export default function WishlistScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
-      <AppHeader icon="back" showSearch={false} showWishlist={false} />
+      <AppHeader 
+        icon="back" 
+        showSearch={false} 
+        showWishlist={false} 
+        onMenuPress={() => router.back()}
+      />
 
       <ScrollView
         style={styles.scrollView}
